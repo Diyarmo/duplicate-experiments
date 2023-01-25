@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 from datetime import datetime
+
 model_name = sys.argv[1]
 queue_name = sys.argv[2]
 
@@ -41,5 +42,5 @@ for file_path in files_to_upload:
         local_file_path=base_models_path + file_path
     )
     
-with open("../../README.md", "a") as f:
-    f.write(f"\n* Model Files Stored in: `{base_bucket}` \n\n")
+with open("../../logs/s3_base_bucket.txt", "a") as f:
+    f.write(base_bucket)
