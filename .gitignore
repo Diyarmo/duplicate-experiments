@@ -1,0 +1,8 @@
+secrets/*
+
+storage/data/raw/train/*.parquet
+storage/data/raw/val/*.parquet
+
+storage/data/prepared/*.parquet
+
+storage/models/*

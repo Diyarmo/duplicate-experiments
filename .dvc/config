@@ -1,0 +1,5 @@
+[core]
+    remote = origin
+['remote "origin"']
+    url = s3://dvc-workspace/duplicate-experiements
+    endpointurl = https://s3.thr2.sotoon.ir

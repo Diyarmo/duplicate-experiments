@@ -1,0 +1,40 @@
+image: registry.cafebazaar.ir:5000/common-images/builder:docker-kube
+
+
+stages:
+  - build
+
+
+.common_setup: &common_setup_definition
+  before_script:
+    - export CI_ACCESS_TOKEN="$(echo ${CI_REPOSITORY_URL} | cut -d@ -f1 | cut -d/ -f3)"
+    - git config --global url."https://${CI_ACCESS_TOKEN}@git.cafebazaar.ir".insteadOf "https://git.cafebazaar.ir"
+
+build-non-master:
+  stage: build
+  except:
+    - master
+    - '/^experiment_[0-9]*-[0-9]*/'
+  services:
+    - registry.cafebazaar.ir:5000/divar/infra/common-images:docker-dind
+  <<: *common_setup_definition
+  script:
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN $CI_REGISTRY
+    - make docker
+    - make push
+    - make tag-non-master
+
+
+
+build-master:
+  stage: build
+  only:
+    - master
+  services:
+    - registry.cafebazaar.ir:5000/divar/infra/common-images:docker-dind
+  <<: *common_setup_definition
+  script:
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN $CI_REGISTRY
+    - make docker
+    - make push
+    - make tag-master
