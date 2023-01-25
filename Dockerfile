@@ -32,7 +32,7 @@ RUN python -m pip install --no-cache-dir -r requirements.txt
 
 COPY . /home/
 
-ARG PROJECT_GIT_PATH="divar/review/bots/bots-dev/duplicate-bot"
+ARG PROJECT_GIT_PATH="ajawe/duplicate-experiments"
 ARG GIT_EMAIL="diyar.mohammadi@divar.ir"
 ARG GIT_USERNAME="airflow-training-pipeline-user"
 
