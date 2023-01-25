@@ -1,0 +1,74 @@
+stages:
+  download_and_preprocess_datasets_general:
+    cmd: >
+      python ../../src/data/download_and_preprocess_datasets.py
+    deps:
+      - ../../src/data/download_and_preprocess_datasets.py
+    outs:
+      - ../../storage/data/prepared/general_train.parquet:
+          persist: true
+      - ../../storage/data/prepared/general_val.parquet:
+          persist: true
+
+  prepare_tokenizer_general:
+    cmd: >
+      python ../../src/data/prepare_tokenizers.py
+      params.yaml
+      BPE
+      ../../storage/data/prepared/general_train.parquet
+      general
+    params:
+      - tokenizer.vocab_size
+    deps:
+      - ../../src/data/prepare_tokenizers.py
+      - ../../storage/data/prepared/general_train.parquet
+    outs:
+      - ../../storage/models/tokenizers/tokenizer_general.json:
+          persist: true
+
+
+  cat_slug_encoder_general:
+    cmd: >
+      python ../../src/data/prepare_categorical_encoder.py
+      ../../storage/data/prepared/general_train.parquet
+      ../../storage/data/prepared/general_val.parquet
+      post1_category,post2_category
+      general_categories
+    deps:
+    - ../../src/data/prepare_categorical_encoder.py
+    - ../../storage/data/prepared/general_train.parquet
+    - ../../storage/data/prepared/general_val.parquet
+    outs:
+    - ../../storage/models/categorical_encodings/general_categories_encoding.npy:
+        persist: true
+
+  city_encoder_general:
+    cmd: >
+      python ../../src/data/prepare_categorical_encoder.py
+      ../../storage/data/prepared/general_train.parquet
+      ../../storage/data/prepared/general_val.parquet
+      post1_city,post2_city
+      general_cities
+    deps:
+    - ../../src/data/prepare_categorical_encoder.py
+    - ../../storage/data/prepared/general_train.parquet
+    - ../../storage/data/prepared/general_val.parquet
+    outs:
+    - ../../storage/models/categorical_encodings/general_cities_encoding.npy:
+        persist: true
+
+
+  neighbor_encoder_general:
+    cmd: >
+      python ../../src/data/prepare_categorical_encoder.py
+      ../../storage/data/prepared/general_train.parquet
+      ../../storage/data/prepared/general_val.parquet
+      post1_neighbor,post2_neighbor
+      general_neighbors
+    deps:
+    - ../../src/data/prepare_categorical_encoder.py
+    - ../../storage/data/prepared/general_train.parquet
+    - ../../storage/data/prepared/general_val.parquet
+    outs:
+    - ../../storage/models/categorical_encodings/general_neighbors_encoding.npy:
+        persist: true

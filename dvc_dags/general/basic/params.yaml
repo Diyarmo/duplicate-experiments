@@ -1,0 +1,2 @@
+tokenizer:
+    vocab_size: 40000
