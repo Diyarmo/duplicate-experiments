@@ -1,0 +1,85 @@
+schema: '2.0'
+stages:
+  download_and_preprocess_datasets_general:
+    cmd: "python ../../src/data/download_and_preprocess_datasets.py\n"
+    deps:
+    - path: ../../src/data/download_and_preprocess_datasets.py
+      md5: 8b683b88e52d8bfd251f6a20ee0b1897
+      size: 3798
+    outs:
+    - path: ../../storage/data/prepared/general_train.parquet
+      md5: f7298805fe8fe3c80b7e2fc9fbe8f12f
+      size: 1434369755
+    - path: ../../storage/data/prepared/general_val.parquet
+      md5: 69f86c56689eaa9d5d83fe3c95470ec3
+      size: 3194175235
+  city_encoder_general:
+    cmd: "python ../../src/data/prepare_categorical_encoder.py ../../storage/data/prepared/general_train.parquet\
+      \ ../../storage/data/prepared/general_val.parquet post1_city,post2_city general_cities\n"
+    deps:
+    - path: ../../src/data/prepare_categorical_encoder.py
+      md5: 814f2a872bf0a52cc64d1129587977c0
+      size: 2548
+    - path: ../../storage/data/prepared/general_train.parquet
+      md5: f7298805fe8fe3c80b7e2fc9fbe8f12f
+      size: 1434369755
+    - path: ../../storage/data/prepared/general_val.parquet
+      md5: 69f86c56689eaa9d5d83fe3c95470ec3
+      size: 3194175235
+    outs:
+    - path: ../../storage/models/categorical_encodings/general_cities_encoding.npy
+      md5: 73df39d8131fcef1cb2b8c1fcafd78c2
+      size: 4537
+  cat_slug_encoder_general:
+    cmd: "python ../../src/data/prepare_categorical_encoder.py ../../storage/data/prepared/general_train.parquet\
+      \ ../../storage/data/prepared/general_val.parquet post1_category,post2_category\
+      \ general_categories\n"
+    deps:
+    - path: ../../src/data/prepare_categorical_encoder.py
+      md5: 814f2a872bf0a52cc64d1129587977c0
+      size: 2548
+    - path: ../../storage/data/prepared/general_train.parquet
+      md5: f7298805fe8fe3c80b7e2fc9fbe8f12f
+      size: 1434369755
+    - path: ../../storage/data/prepared/general_val.parquet
+      md5: 69f86c56689eaa9d5d83fe3c95470ec3
+      size: 3194175235
+    outs:
+    - path: ../../storage/models/categorical_encodings/general_categories_encoding.npy
+      md5: 55be1adf9d6238d9fd20ee485201e6e4
+      size: 4882
+  neighbor_encoder_general:
+    cmd: "python ../../src/data/prepare_categorical_encoder.py ../../storage/data/prepared/general_train.parquet\
+      \ ../../storage/data/prepared/general_val.parquet post1_neighbor,post2_neighbor\
+      \ general_neighbors\n"
+    deps:
+    - path: ../../src/data/prepare_categorical_encoder.py
+      md5: 814f2a872bf0a52cc64d1129587977c0
+      size: 2548
+    - path: ../../storage/data/prepared/general_train.parquet
+      md5: f7298805fe8fe3c80b7e2fc9fbe8f12f
+      size: 1434369755
+    - path: ../../storage/data/prepared/general_val.parquet
+      md5: 69f86c56689eaa9d5d83fe3c95470ec3
+      size: 3194175235
+    outs:
+    - path: ../../storage/models/categorical_encodings/general_neighbors_encoding.npy
+      md5: edf5f6a950815afc0ed30a106d9f61f0
+      size: 14406
+  prepare_tokenizer_general:
+    cmd: "python ../../src/data/prepare_tokenizers.py params.yaml BPE ../../storage/data/prepared/general_train.parquet\
+      \ general\n"
+    deps:
+    - path: ../../src/data/prepare_tokenizers.py
+      md5: 5208793c93ee769ce18ce7f4a3b3d383
+      size: 2737
+    - path: ../../storage/data/prepared/general_train.parquet
+      md5: f7298805fe8fe3c80b7e2fc9fbe8f12f
+      size: 1434369755
+    params:
+      params.yaml:
+        tokenizer.vocab_size: 40000
+    outs:
+    - path: ../../storage/models/tokenizers/tokenizer_general.json
+      md5: 69a183a40824b3d2d38f6cfc3559ca4e
+      size: 1342740
