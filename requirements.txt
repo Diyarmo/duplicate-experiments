@@ -4,8 +4,8 @@ pyarrow
 PyYAML
 parsivar
 
-torch==1.13.0
-torchtext
+torch==1.12.1
+torchtext==0.13.0
 pytorch-lightning
 
 python-Levenshtein
