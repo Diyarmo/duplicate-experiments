@@ -63,12 +63,12 @@ def train_model(
 
                              ModelCheckpoint(
                                  monitor="val_duplicate_loss",
-                                 dirpath="/../../storage/models/",
+                                 dirpath="../../storage/models/",
                                  filename=f"siamese_simple_bilstm_{queue_name}_model",
                                  save_top_k=1,
                                  mode="min"),
 
-                             TQDMProgressBar(refresh_rate=20)
+                            #  TQDMProgressBar(refresh_rate=20)
                          ],
                          logger=[
                              TensorBoardLogger(

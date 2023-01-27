@@ -159,7 +159,7 @@ class DuplicateSiameseBiLSTM(pl.LightningModule):
                  on_epoch=True, prog_bar=True, logger=True)
 
         if batch_idx % 20 == 0:
-            output = self.train_metrics(duplicate_score, y_duplicate.int())
+            output = self.valid_metrics(duplicate_score, y_duplicate.int())
             self.log_dict(output, on_step=True, on_epoch=True,
                           prog_bar=True, logger=True)
 

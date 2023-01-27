@@ -33,7 +33,6 @@ stages:
       siamese_simple_bilstm
       ../../storage/data/prepared/general_val.parquet
       ../../storage/models/tokenizers/tokenizer_general.json
-      params.yaml
       ../../storage/models/siamese_simple_bilstm_general_model.ckpt
     deps:
     - ../../storage/models/siamese_simple_bilstm_general_model.ckpt
@@ -42,8 +41,6 @@ stages:
     - ../../storage/models/tokenizers/tokenizer_general.json
     outs:
     - ../../storage/data/prepared/siamese_simple_bilstm_general_test_with_preds.parquet:
-        persist: true
-    - ../../logs/siamese_simple_bilstm_general_slug_auc.json:
         persist: true
     metrics:
     - ../../logs/siamese_simple_bilstm_general_scores_file.json:

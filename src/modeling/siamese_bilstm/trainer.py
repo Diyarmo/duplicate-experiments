@@ -82,7 +82,7 @@ def train_model(
                             
                             ModelCheckpoint(
                                 monitor="val_duplicate_loss",
-                                dirpath="/home/storage/models/",
+                                dirpath="../../storage/models/",
                                 filename=f"siamese-bilstm-model-{queue_name}",
                                 save_top_k=1,
                                 mode="min"),

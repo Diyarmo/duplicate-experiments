@@ -1,0 +1,36 @@
+schema: '2.0'
+stages:
+  train_siamese_simple_bilstm_general_queue:
+    cmd: "python ../../src/train.py params.yaml siamese_simple_bilstm ../../storage/data/prepared/general_train.parquet\
+      \ ../../storage/data/prepared/general_val.parquet ../../storage/models/tokenizers/tokenizer_general.json\n"
+    deps:
+    - path: ../../src/modeling/siamese_simple_bilstm/data.py
+      md5: 3d53cd6c56d47a9d4de46931fb5691e4
+      size: 4881
+    - path: ../../src/modeling/siamese_simple_bilstm/model.py
+      md5: 2b05ad5961c82eb81f65abfe0da7fce8
+      size: 5948
+    - path: ../../src/train.py
+      md5: 612127970eda3499065f411364e5df0d
+      size: 2240
+    - path: ../../storage/data/prepared/general_train.parquet
+      md5: f7298805fe8fe3c80b7e2fc9fbe8f12f
+      size: 1434369755
+    - path: ../../storage/data/prepared/general_val.parquet
+      md5: 69f86c56689eaa9d5d83fe3c95470ec3
+      size: 3194175235
+    - path: ../../storage/models/tokenizers/tokenizer_general.json
+      md5: 69a183a40824b3d2d38f6cfc3559ca4e
+      size: 1342740
+    params:
+      params.yaml:
+        siamese_simple_bilstm.initial_lr: 0.001
+        siamese_simple_bilstm.max_epochs: 5
+        siamese_simple_bilstm.text_embed_dim: 128
+        siamese_simple_bilstm.text_max_length: 512
+        siamese_simple_bilstm.text_num_layers: 2
+        tokenizer.vocab_size: 40000
+    outs:
+    - path: ../../storage/models/siamese_simple_bilstm_general_model.ckpt
+      md5: daefeccdfbde76c3e6d692a165ed7d86
+      size: 77270624
