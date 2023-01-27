@@ -1,6 +1,3 @@
-tokenizer:
-    vocab_size: 40000
-
 siamese_simple_bilstm:
     text_max_length: 512
     text_embed_dim: 128
@@ -10,3 +7,10 @@ siamese_simple_bilstm:
     dropout_rate: 0.2
     batch_size: 256
     initial_lr: 0.001
+    experiment_specs:
+    - "Simple MulitLayer BiLSTM"
+    - "Using {title, desc} features in encoder"
+    - "Using {bilstm} in encoder"
+    - "Using {mean} to aggregate embs in encoder"
+    - "Using {concat, fully-connected} for output"
+    

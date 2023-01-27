@@ -9,7 +9,7 @@ import pytorch_lightning as pl
 
 
 def get_simple_bilstm_model_predictions(model, data_loader):
-    predictions = pl.Trainer(accelerator='gpu', gpus=[1]).predict(
+    predictions = pl.Trainer(accelerator='gpu', gpus=[0]).predict(
         model, data_loader)
     predictions = torch.cat(predictions, dim=0).cpu().numpy()
     return predictions

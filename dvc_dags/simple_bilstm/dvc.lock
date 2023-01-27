@@ -29,8 +29,43 @@ stages:
         siamese_simple_bilstm.text_embed_dim: 128
         siamese_simple_bilstm.text_max_length: 512
         siamese_simple_bilstm.text_num_layers: 2
-        tokenizer.vocab_size: 40000
     outs:
     - path: ../../storage/models/siamese_simple_bilstm_general_model.ckpt
-      md5: daefeccdfbde76c3e6d692a165ed7d86
+      md5: 86ddd44045abdb00db79adcbfa10aff1
       size: 77270624
+  evaluate_simple_bilstm_general_queue:
+    cmd: "python ../../src/evaluate.py siamese_simple_bilstm ../../storage/data/prepared/general_val.parquet\
+      \ ../../storage/models/tokenizers/tokenizer_general.json ../../storage/models/siamese_simple_bilstm_general_model.ckpt\n"
+    deps:
+    - path: ../../src/evaluate.py
+      md5: 036c19d8199cc32746fce28fead8ca05
+      size: 4219
+    - path: ../../storage/data/prepared/general_val.parquet
+      md5: 69f86c56689eaa9d5d83fe3c95470ec3
+      size: 3194175235
+    - path: ../../storage/models/siamese_simple_bilstm_general_model.ckpt
+      md5: 86ddd44045abdb00db79adcbfa10aff1
+      size: 77270624
+    - path: ../../storage/models/tokenizers/tokenizer_general.json
+      md5: 69a183a40824b3d2d38f6cfc3559ca4e
+      size: 1342740
+    outs:
+    - path: ../../logs/siamese_simple_bilstm_general_scores_file.json
+      md5: 6a475b0d9923869b10be67b25e1a4d8c
+      size: 27
+    - path: ../../storage/data/prepared/siamese_simple_bilstm_general_val_with_preds.parquet
+      md5: 365d5af852c3b8d22126bc0f7b935ed4
+      size: 52762667
+  update_readme:
+    cmd: "python ../../src/update_readme.py params.yaml ../basic/params.yaml siamese_simple_bilstm\
+      \ ../../logs/siamese_simple_bilstm_general_scores_file.json\n"
+    deps:
+    - path: ../../logs/siamese_simple_bilstm_general_scores_file.json
+      md5: 6a475b0d9923869b10be67b25e1a4d8c
+      size: 27
+    - path: ../../src/update_readme.py
+      md5: 9931629472c9978ed5116d481997e900
+      size: 1381
+    - path: ../../storage/data/prepared/siamese_simple_bilstm_general_val_with_preds.parquet
+      md5: 365d5af852c3b8d22126bc0f7b935ed4
+      size: 52762667

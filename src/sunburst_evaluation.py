@@ -47,7 +47,7 @@ def get_metrics_for_plot(per_cat_metrics, df):
     )
 
     for metrics in per_cat_metrics:
-        for a in metrics.iteritems():
+        for a in metrics.items():
             data["node"].append(a[0][1])
             data["parent"].append(a[0][0])
             

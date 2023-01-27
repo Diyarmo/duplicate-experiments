@@ -9,7 +9,6 @@ stages:
       ../../storage/data/prepared/general_val.parquet
       ../../storage/models/tokenizers/tokenizer_general.json
     params:
-    - tokenizer.vocab_size
     - siamese_simple_bilstm.max_epochs
     - siamese_simple_bilstm.text_max_length
     - siamese_simple_bilstm.text_embed_dim
@@ -40,7 +39,7 @@ stages:
     - ../../storage/data/prepared/general_val.parquet
     - ../../storage/models/tokenizers/tokenizer_general.json
     outs:
-    - ../../storage/data/prepared/siamese_simple_bilstm_general_test_with_preds.parquet:
+    - ../../storage/data/prepared/siamese_simple_bilstm_general_val_with_preds.parquet:
         persist: true
     metrics:
     - ../../logs/siamese_simple_bilstm_general_scores_file.json:
@@ -61,5 +60,11 @@ stages:
   update_readme:
     cmd: >
       python ../../src/update_readme.py
+      params.yaml
+      ../basic/params.yaml
+      siamese_simple_bilstm
+      ../../logs/siamese_simple_bilstm_general_scores_file.json
     deps:
-    - ../../storage/data/prepared/siamese_simple_bilstm_general_test_with_preds.parquet
+    - ../../src/update_readme.py
+    - ../../storage/data/prepared/siamese_simple_bilstm_general_val_with_preds.parquet
+    - ../../logs/siamese_simple_bilstm_general_scores_file.json

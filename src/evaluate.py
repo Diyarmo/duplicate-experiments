@@ -4,11 +4,11 @@ from sunburst_evaluation import create_and_save_sunburst_plot
 from modeling.siamese_simple_bilstm.evaluate import get_simple_bilstm_model_and_dataloader, get_simple_bilstm_model_predictions
 from modeling.siamese_transformer.evaluate import get_transformer_model_and_dataloader, get_transformer_model_predictions
 from modeling.siamese_bilstm.evaluate import get_bilstm_model_and_dataloader, get_bilstm_model_predictions
-from tqdm import tqdm
+from matplotlib.ticker import PercentFormatter
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import json
-import yaml
 import sys
 import os
 sys.path.append('.')
@@ -25,6 +25,37 @@ def calculate_roc(row):
         auc = np.nan
     return auc, mean
 
+
+def add_hist_to_plot(df, label):
+    plt.hist(
+        df,
+        alpha=0.5,
+        bins=20,
+        label=label,
+        weights=np.ones(len(df)) / len(df))
+
+
+def create_hist_plot(auc, edited_df, not_edited_df):
+    plt.figure(figsize=(12, 8))
+    plt.title(
+        f"Comparison of Prediction Prob. Density by Label | ROC-AUC = {auc:.4f}")
+    add_hist_to_plot(edited_df, "Dupliated Ad")
+    add_hist_to_plot(not_edited_df, "Not Duplicated Ad")
+    plt.legend()
+    plt.xlabel("Prediction Prob.")
+    plt.ylabel("Density")
+    plt.gca().yaxis.set_major_formatter(PercentFormatter(1))
+
+
+def save_prob_density_comparison_plot(df, plot_name):
+    auc = roc_auc_score(y_true=df['is_duplicate'],
+                        y_score=df['prediction'])
+
+    dup_df = df[df['is_duplicate'].astype(bool)]['prediction']
+    not_dup_df = df[~df['is_duplicate'].astype(bool)]['prediction']
+    create_hist_plot(auc, dup_df, not_dup_df)
+
+    plt.savefig(f"../../logs/{plot_name}.jpg")
 
 model_name = sys.argv[1]
 test_path = sys.argv[2]
@@ -87,9 +118,12 @@ test_data.to_parquet(
     f"../../storage/data/prepared/{model_name}_{queue_name}_val_with_preds.parquet")
 
 create_and_save_sunburst_plot(
-    test_data, f"duplicate_{model_name}_{queue_name}_auc_per_cat")
+    test_data, f"{model_name}_{queue_name}_auc_per_cat")
 
-auc = roc_auc_score(y_true=test_data['is_duplicate'], y_score=test_data['prediction'])
+save_prob_density_comparison_plot(
+    test_data, f"{model_name}_{queue_name}_prob_density_by_label")
 
 with open(f"../../logs/{model_name}_{queue_name}_scores_file.json", "w") as fd:
-    json.dump({'auc': auc}, fd)
+    json.dump({
+        'auc': roc_auc_score(y_true=test_data['is_duplicate'], y_score=test_data['prediction'])
+    }, fd)
