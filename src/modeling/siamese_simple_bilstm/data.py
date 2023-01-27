@@ -104,11 +104,11 @@ class DuplicateDataLoader(pl.LightningDataModule):
         labels = []
 
         for post1_x, post2_x, _y in batch:
-            post1_titles.append(post1_x[3])
-            post1_descs.append(post1_x[4])
+            post1_titles.append(post1_x[0])
+            post1_descs.append(post1_x[1])
 
-            post2_titles.append(post2_x[3])
-            post2_descs.append(post2_x[4])
+            post2_titles.append(post2_x[0])
+            post2_descs.append(post2_x[1])
 
             labels.append(_y)
 

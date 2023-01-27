@@ -1,0 +1,68 @@
+stages:
+
+  train_siamese_simple_bilstm_general_queue:
+    cmd: >
+      python ../../src/train.py
+      params.yaml
+      siamese_simple_bilstm
+      ../../storage/data/prepared/general_train.parquet
+      ../../storage/data/prepared/general_val.parquet
+      ../../storage/models/tokenizers/tokenizer_general.json
+    params:
+    - tokenizer.vocab_size
+    - siamese_simple_bilstm.max_epochs
+    - siamese_simple_bilstm.text_max_length
+    - siamese_simple_bilstm.text_embed_dim
+    - siamese_simple_bilstm.text_num_layers
+    - siamese_simple_bilstm.initial_lr
+    deps:
+    - ../../src/train.py
+    - ../../src/modeling/siamese_simple_bilstm/model.py
+    - ../../src/modeling/siamese_simple_bilstm/data.py
+    - ../../storage/data/prepared/general_train.parquet
+    - ../../storage/data/prepared/general_val.parquet
+    - ../../storage/models/tokenizers/tokenizer_general.json
+    outs:
+    - ../../storage/models/siamese_simple_bilstm_general_model.ckpt:
+        persist: true
+
+
+  evaluate_simple_bilstm_general_queue:
+    cmd: >
+      python ../../src/evaluate.py
+      siamese_simple_bilstm
+      ../../storage/data/prepared/general_val.parquet
+      ../../storage/models/tokenizers/tokenizer_general.json
+      params.yaml
+      ../../storage/models/siamese_simple_bilstm_general_model.ckpt
+    deps:
+    - ../../storage/models/siamese_simple_bilstm_general_model.ckpt
+    - ../../src/evaluate.py
+    - ../../storage/data/prepared/general_val.parquet
+    - ../../storage/models/tokenizers/tokenizer_general.json
+    outs:
+    - ../../storage/data/prepared/siamese_simple_bilstm_general_test_with_preds.parquet:
+        persist: true
+    - ../../logs/siamese_simple_bilstm_general_slug_auc.json:
+        persist: true
+    metrics:
+    - ../../logs/siamese_simple_bilstm_general_scores_file.json:
+        persist: true
+
+
+
+  # upload_models:
+  #   cmd: >
+  #     python ../../src/data/upload_models.py
+  #     siamese_simple_bilstm
+  #     general
+  #   deps:
+  #   - ../../src/data/upload_models.py
+  #   - ../../storage/models/siamese_simple_bilstm_general_model.ckpt
+  #   - ../../storage/models/tokenizers/tokenizer_general.json
+
+  update_readme:
+    cmd: >
+      python ../../src/update_readme.py
+    deps:
+    - ../../storage/data/prepared/siamese_simple_bilstm_general_test_with_preds.parquet

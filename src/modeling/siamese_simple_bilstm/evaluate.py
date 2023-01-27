@@ -20,7 +20,7 @@ def get_bilstm_model_predictions(model, data_loader, device):
             stats = stats.to(device)
             y_duplicate = y_duplicate.to(device)
 
-            post1_features, post2_features, duplicate_score = model.forward(post1_x=post1_x, post2_x=post2_x, stats=stats)
+            duplicate_score = model.forward(post1_x=post1_x, post2_x=post2_x, stats=stats)
             
             predictions += list(duplicate_score.cpu())
             labels += list(y_duplicate.cpu())    

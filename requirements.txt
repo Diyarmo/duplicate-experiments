@@ -5,7 +5,7 @@ PyYAML
 parsivar
 
 torch==1.12.1
-torchtext==0.13.0
+torchtext~=0.13.0
 pytorch-lightning
 
 python-Levenshtein
@@ -18,9 +18,7 @@ tokenizers~=0.10.3
 scikit-learn==0.24.2
 wandb
 
-matplotlib~=3.3.1
 
-setuptools~=57.0.0
 dvc[s3]
 boto3
 plotly

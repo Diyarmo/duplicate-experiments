@@ -14,7 +14,7 @@ from transformers import PreTrainedTokenizerFast
 
 torch.multiprocessing.set_sharing_strategy('file_system')
 
-from data.text_normalizer import normalize_text, tizi_normalizer
+from data.text_normalizer import normalize_text
 from modeling.siamese_bilstm.data_utils import digit_words, digits
 
 def extract_list_of_numbers_from_text(text):

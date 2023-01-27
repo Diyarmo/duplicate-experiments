@@ -17,7 +17,7 @@ class BiLSTMBlock(nn.Module):
 
     def forward(self, text_embed, mask=None):
         text_embed, _ = self.bilstm_layers(text_embed)
-        text_embed_mean, _ = torch.mean(text_embed, dim=1)
+        text_embed_mean = torch.mean(text_embed, dim=1)
         return text_embed_mean
 
 
@@ -70,12 +70,7 @@ class DuplicateSiameseBiLSTM(pl.LightningModule):
     def __init__(self,
                  text_vocab_size,
                  text_emb_dim,
-                 title_num_layers,
-                 desc_num_layers,
-                 slug_vocab_size: int,
-                 city_size: int,
-                 neighbor_size: int,
-                 features_emb_dim: int,
+                 text_num_layers,
                  output_feature_dim,
                  dropout_rate: float,
                  initial_lr):
@@ -83,12 +78,7 @@ class DuplicateSiameseBiLSTM(pl.LightningModule):
         self.save_hyperparameters()
         self.encoder = DeepBiLSTM(text_vocab_size,
                                   text_emb_dim,
-                                  title_num_layers,
-                                  desc_num_layers,
-                                  slug_vocab_size,
-                                  city_size,
-                                  neighbor_size,
-                                  features_emb_dim,
+                                  text_num_layers,
                                   output_feature_dim,
                                   dropout_rate)
 
