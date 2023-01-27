@@ -40,11 +40,11 @@ class DeepBiLSTM(pl.LightningModule):
         concat_layer_dim = (2 * text_emb_dim) + (2 * text_emb_dim)
         self.dropout_layer = nn.Dropout(dropout_rate)
 
-        self.output_layer = nn.Sequential(    
+        self.output_layer = nn.Sequential(
             self.dropout_layer,
             nn.Linear(concat_layer_dim, concat_layer_dim),
             nn.ReLU(inplace=True),
-            
+
             self.dropout_layer,
             nn.Linear(concat_layer_dim, output_feature_dim),
             nn.ReLU(inplace=True),
@@ -82,17 +82,16 @@ class DuplicateSiameseBiLSTM(pl.LightningModule):
                                   output_feature_dim,
                                   dropout_rate)
 
-
         CONCAT_LAYER_SIZE = 2 * output_feature_dim
-        
+
         self.initial_lr = initial_lr
 
         self.dropout_layer = nn.Dropout(dropout_rate)
 
-        self.classification_head = nn.Sequential(    
+        self.classification_head = nn.Sequential(
             self.dropout_layer,
             nn.Linear(CONCAT_LAYER_SIZE, CONCAT_LAYER_SIZE),
-            
+
             self.dropout_layer,
             nn.Linear(CONCAT_LAYER_SIZE, 1),
 
@@ -145,7 +144,7 @@ class DuplicateSiameseBiLSTM(pl.LightningModule):
 
         if (batch_idx != 0) and (batch_idx % 1000 == 0):
             self.lr_schedulers().step()
-            
+
         return duplicate_loss
 
     def validation_step(self, batch, batch_idx):
@@ -165,6 +164,13 @@ class DuplicateSiameseBiLSTM(pl.LightningModule):
                           prog_bar=True, logger=True)
 
         return duplicate_loss
+
+    def predict_step(self, batch, batch_idx):
+        post1_x, post2_x, y_duplicate = batch
+
+        duplicate_score = self.forward(
+            post1_x=post1_x, post2_x=post2_x)
+        return duplicate_score
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.initial_lr)
