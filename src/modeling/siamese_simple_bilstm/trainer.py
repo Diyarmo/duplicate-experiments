@@ -15,7 +15,8 @@ def train_model(
         train_file,
         test_file,
         tokenizer_model_filename,
-        models_params
+        models_params,
+        experiment_name
 ):
 
     max_epochs = models_params['max_epochs']
@@ -73,11 +74,11 @@ def train_model(
                          logger=[
                              TensorBoardLogger(
                                  save_dir="../../logs/tb_logs",
-                                 name=datetime.now().strftime('%Y-%m-%d--%H-%M'),
+                                 name=experiment_name + "_" + datetime.now().strftime('%Y-%m-%d--%H-%M'),
                                  log_graph=True),
                              WandbLogger(
                                  save_dir="../../logs/wandb_logs",
-                                 name=datetime.now().strftime('%Y-%m-%d--%H-%M'),
+                                 name=experiment_name + "_" + datetime.now().strftime('%Y-%m-%d--%H-%M'),
                                  project="DeepDuplicateBiLSTM",
                                  log_model=False,
                                  offline=True)

@@ -12,6 +12,12 @@ model_name = sys.argv[2]
 with open(params_file, 'r') as f:
     params = yaml.safe_load(f)
 
+if "experiment_name" in params:
+    experiment_name = params["experiment_name"]
+else:
+    experiment_name = input("==== PLEASE ENTER A NAME FOR EXPERIMENT ====\n")
+
+
 if model_name == "siamese_simple_bilstm":
     train_file = sys.argv[3]
     test_file = sys.argv[4]
@@ -24,7 +30,8 @@ if model_name == "siamese_simple_bilstm":
         train_file=train_file,
         test_file=test_file,
         tokenizer_model_filename=tokenizer_file,
-        models_params=models_params
+        models_params=models_params,
+        experiment_name=experiment_name
     )
 elif model_name == "siamese_bilstm":
     train_file = sys.argv[3]
