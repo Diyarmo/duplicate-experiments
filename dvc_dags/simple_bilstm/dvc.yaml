@@ -38,6 +38,7 @@ stages:
     - ../../src/evaluate.py
     - ../../storage/data/prepared/general_val.parquet
     - ../../storage/models/tokenizers/tokenizer_general.json
+    - ../../src/modeling/siamese_simple_bilstm/evaluate.py
     outs:
     - ../../storage/data/prepared/siamese_simple_bilstm_general_val_with_preds.parquet:
         persist: true
