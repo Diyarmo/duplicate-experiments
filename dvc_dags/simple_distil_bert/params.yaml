@@ -1,0 +1,17 @@
+experiment_name: distil_bert_pretrained_title_desc_attention
+
+siamese_simple_distil_bert:
+    text_max_length: 512
+    output_feature_dim: 768
+    max_epochs: 5
+    dropout_rate: 0.2
+    batch_size: 64
+    initial_lr: 0.001
+    accumulate_grad_batches: 4
+    # checkpoint_path: ../../storage/models/siamese_simple_transformer_general_model-v1.ckpt
+    experiment_specs:
+        - "Distil Bert"
+        - "Using {title, desc} features in encoder"
+        - "Using {distil bert pretrained} in encoder"
+        - "Using {attention} to aggregate embs in encoder"
+        - "Using {subtract, concat, fully-connected} for output"

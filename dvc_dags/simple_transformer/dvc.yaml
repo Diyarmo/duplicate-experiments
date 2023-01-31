@@ -1,0 +1,68 @@
+stages:
+
+  train_siamese_simple_transformer_general_queue:
+    cmd: >
+      python ../../src/train.py
+      params.yaml
+      siamese_simple_transformer
+      ../../storage/data/prepared/general_train.parquet
+      ../../storage/data/prepared/general_val.parquet
+      ../../storage/models/tokenizers/tokenizer_general.json
+      ../../storage/models/categorical_encodings/general_categories_encoding.npy
+      ../../storage/models/categorical_encodings/general_cities_encoding.npy
+    params:
+    - siamese_simple_transformer.max_epochs
+    - siamese_simple_transformer.text_max_length
+    - siamese_simple_transformer.text_emb_dim
+    - siamese_simple_transformer.text_num_layers
+    - siamese_simple_transformer.initial_lr
+    - siamese_simple_transformer.output_feature_dim
+    - siamese_simple_transformer.num_heads
+    - siamese_simple_transformer.text_hidden_dim
+
+    deps:
+    - ../../src/train.py
+    - ../../src/modeling/siamese_simple_transformer/model.py
+    - ../../src/modeling/siamese_simple_transformer/data.py
+    - ../../storage/data/prepared/general_train.parquet
+    - ../../storage/data/prepared/general_val.parquet
+    - ../../storage/models/tokenizers/tokenizer_general.json
+    - ../../storage/models/categorical_encodings/general_categories_encoding.npy
+    - ../../storage/models/categorical_encodings/general_cities_encoding.npy
+    outs:
+    - ../../storage/models/siamese_simple_transformer_general_model.ckpt:
+        persist: true
+
+
+  evaluate_siamese_simple_transformer_general_queue:
+    cmd: >
+      python ../../src/evaluate.py
+      siamese_simple_transformer
+      ../../storage/data/prepared/general_val.parquet
+      ../../storage/models/tokenizers/tokenizer_general.json
+      ../../storage/models/siamese_simple_transformer_general_model.ckpt
+    deps:
+    - ../../storage/models/siamese_simple_transformer_general_model.ckpt
+    - ../../src/evaluate.py
+    - ../../storage/data/prepared/general_val.parquet
+    - ../../storage/models/tokenizers/tokenizer_general.json
+    - ../../src/modeling/siamese_simple_transformer/evaluate.py
+    outs:
+    - ../../storage/data/prepared/siamese_simple_transformer_general_val_with_preds.parquet:
+        persist: true
+    metrics:
+    - ../../logs/siamese_simple_transformer_general_scores_file.json:
+        persist: true
+
+
+  update_readme:
+    cmd: >
+      python ../../src/update_readme.py
+      params.yaml
+      ../basic/params.yaml
+      siamese_simple_transformer
+      ../../logs/siamese_simple_transformer_general_scores_file.json
+    deps:
+    - ../../src/update_readme.py
+    - ../../storage/data/prepared/siamese_simple_transformer_general_val_with_preds.parquet
+    - ../../logs/siamese_simple_transformer_general_scores_file.json

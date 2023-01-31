@@ -2,15 +2,16 @@ siamese_simple_bilstm:
     text_max_length: 512
     text_embed_dim: 128
     text_num_layers: 2
-    output_feature_dim: 256
+    output_feature_dim: 296 
+    features_emb_dim: 20
     max_epochs: 5
     dropout_rate: 0.2
     batch_size: 256
     initial_lr: 0.001
     experiment_specs:
     - "Simple MulitLayer BiLSTM"
-    - "Using {title, desc} features in encoder"
+    - "Using {title, desc, slug, city} features in encoder"
     - "Using {bilstm} in encoder"
-    - "Using {mean} to aggregate embs in encoder"
-    - "Using {concat, fully-connected} for output"
+    - "Using {attention} to aggregate embs in encoder"
+    - "Using {subtract, concat, fully-connected} for output"
     

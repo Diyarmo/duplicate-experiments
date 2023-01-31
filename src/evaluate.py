@@ -2,6 +2,8 @@ from sklearn.metrics import roc_auc_score
 from sklearn.metrics import confusion_matrix
 from sunburst_evaluation import create_and_save_sunburst_plot
 from modeling.siamese_simple_bilstm.evaluate import get_simple_bilstm_model_and_dataloader, get_simple_bilstm_model_predictions
+from modeling.siamese_simple_distil_bert.evaluate import get_simple_distil_bert_model_predictions, get_simple_distil_bert_model_and_dataloader
+from modeling.siamese_simple_transformer.evaluate import get_simple_transformer_model_and_dataloader, get_simple_transformer_model_predictions
 from modeling.siamese_transformer.evaluate import get_transformer_model_and_dataloader, get_transformer_model_predictions
 from modeling.siamese_bilstm.evaluate import get_bilstm_model_and_dataloader, get_bilstm_model_predictions
 from matplotlib.ticker import PercentFormatter
@@ -57,25 +59,52 @@ def save_prob_density_comparison_plot(df, plot_name):
 
     plt.savefig(f"../../logs/{plot_name}.jpg")
 
+
 model_name = sys.argv[1]
 test_path = sys.argv[2]
-tokenizer_file = sys.argv[3]
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 if model_name == "siamese_simple_bilstm":
-
-    model_path = sys.argv[4]
+    tokenizer_file = sys.argv[3]
+    slug_tokenizer_file = sys.argv[4]
+    city_tokenizer_file = sys.argv[5]
+    model_path = sys.argv[6]
 
     model, data_loader = get_simple_bilstm_model_and_dataloader(
         model_file=model_path,
         tokenizer_file=tokenizer_file,
         test_path=test_path,
+        slug_tokenizer_file=slug_tokenizer_file,
+        city_tokenizer_file=city_tokenizer_file
     )
 
     predictions = get_simple_bilstm_model_predictions(model, data_loader)
+
+elif model_name == "siamese_simple_distil_bert":
+    model_path = sys.argv[3]
+
+    model, data_loader = get_simple_distil_bert_model_and_dataloader(
+        model_file=model_path,
+        test_path=test_path,
+    )
+    predictions = get_simple_distil_bert_model_predictions(model, data_loader)
+
+elif model_name == "siamese_simple_transformer":
+    tokenizer_file = sys.argv[3]
+    model_path = sys.argv[4]
+
+    model, data_loader = get_simple_transformer_model_and_dataloader(
+        model_file=model_path,
+        tokenizer_file=tokenizer_file,
+        test_path=test_path,
+    )
+
+    predictions = get_simple_transformer_model_predictions(model, data_loader)
+
 elif model_name == "siamese_bilstm":
+    tokenizer_file = sys.argv[3]
     slug_tokenizer_file = sys.argv[4]
     city_tokenizer_file = sys.argv[5]
     neighbor_tokenizer_file = sys.argv[6]
@@ -94,6 +123,7 @@ elif model_name == "siamese_bilstm":
     predictions, labels = get_bilstm_model_predictions(
         model, data_loader, device)
 elif model_name == "siamese_transformer":
+    tokenizer_file = sys.argv[3]
     slug_tokenizer_file = sys.argv[4]
     city_tokenizer_file = sys.argv[5]
     neighbor_tokenizer_file = sys.argv[6]

@@ -42,5 +42,6 @@ storage/data/raw/train/*.parquet
 storage/data/raw/val/*.parquet
 
 storage/data/prepared/*.parquet
+storage/data/prepared/*.csv
 
 storage/models/*
