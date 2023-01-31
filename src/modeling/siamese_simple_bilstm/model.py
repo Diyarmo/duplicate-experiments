@@ -6,6 +6,11 @@ from torch import nn
 
 from torchmetrics import Accuracy, MetricCollection, AUROC
 
+TEXT_AGGREGATION = "mean" # "attention", "mean"
+FIELDS_ENCODING = "none" # "embedding", "none"
+COMPARISON = "none" # "subtract", "none"
+
+
 
 class Attention(nn.Module):
     def __init__(self, embed_dim):
@@ -56,7 +61,12 @@ class BiLSTMBlock(nn.Module):
 
     def forward(self, text_embed, mask=None):
         text_embed, _ = self.bilstm_layers(text_embed)
-        text_embed_mean, _ = self.attention(text_embed, mask)
+
+        if TEXT_AGGREGATION == "attention":
+            text_embed_mean, _ = self.attention(text_embed, mask)
+        elif TEXT_AGGREGATION == "mean":
+            text_embed_mean = torch.mean(text_embed, dim=1)
+
         return text_embed_mean
 
 
@@ -69,20 +79,23 @@ class DeepBiLSTM(pl.LightningModule):
                  city_vocab_size,
                  features_emb_dim,
                  output_feature_dim,
-                 dropout_rate: float):
+                 dropout_rate: float,
+                 ):
         super().__init__()
         self.save_hyperparameters()
 
         self.text_embedding = nn.Embedding(text_vocab_size, text_emb_dim)
-        self.slug_embedding = nn.Embedding(slug_vocab_size, features_emb_dim)
-        self.city_embedding = nn.Embedding(city_vocab_size, features_emb_dim)
+        concat_layer_dim = 2 * text_emb_dim
+    
 
-        self.bilstm = BiLSTMBlock(
+        if FIELDS_ENCODING == "embedding":
+            self.slug_embedding = nn.Embedding(slug_vocab_size, features_emb_dim)
+            self.city_embedding = nn.Embedding(city_vocab_size, features_emb_dim)
+            concat_layer_dim += 2 * features_emb_dim
+
+        self.text_encoder = BiLSTMBlock(
             text_emb_dim=text_emb_dim, num_layers=text_num_layers)
 
-        # Title + Desc + Slug + City
-        concat_layer_dim = (2 * text_emb_dim) + \
-            (2 * text_emb_dim) + (2 * features_emb_dim)
         self.dropout_layer = nn.Dropout(dropout_rate)
 
         self.output_layer = nn.Sequential(
@@ -95,18 +108,20 @@ class DeepBiLSTM(pl.LightningModule):
             nn.ReLU(inplace=True),
         )
 
-    def forward(self, title_tokens, title_masks, desc_tokens, desc_masks, slug, city):
-        title_embed = self.text_embedding(title_tokens)
-        title_embed_mean = self.bilstm(title_embed, title_masks)
+    def forward(self, text_tokens, text_masks, slug, city):
+        text_embed = self.text_embedding(text_tokens)
+        text_embed_mean = self.text_encoder(text_embed, text_masks)
 
-        desc_embed = self.text_embedding(desc_tokens)
-        desc_embed_mean = self.bilstm(desc_embed, desc_masks)
 
-        slug_embed = self.slug_embedding(slug)
-        city_embed = self.city_embedding(city)
+        if FIELDS_ENCODING == "embedding":
+            slug_embed = self.slug_embedding(slug)
+            city_embed = self.city_embedding(city)
 
-        concated_features = torch.cat(
-            [title_embed_mean, desc_embed_mean, slug_embed, city_embed], dim=1)
+            concated_features = torch.cat(
+                [text_embed_mean, slug_embed, city_embed], dim=1)
+        else:
+            concated_features = torch.cat(
+                [text_embed_mean], dim=1)
 
         # TODO: try tanh, relu, sigmoid, MultiheadAttention, ELU
         output = torch.tanh(self.output_layer(concated_features))
@@ -136,7 +151,10 @@ class DuplicateSiameseBiLSTM(pl.LightningModule):
                                   output_feature_dim,
                                   dropout_rate)
 
-        CONCAT_LAYER_SIZE = 3 * output_feature_dim
+        if COMPARISON == "subtract":
+            concat_layer_size = 3 * output_feature_dim
+        else:
+            concat_layer_size = 2 * output_feature_dim
 
         self.initial_lr = initial_lr
 
@@ -144,10 +162,10 @@ class DuplicateSiameseBiLSTM(pl.LightningModule):
 
         self.classification_head = nn.Sequential(
             self.dropout_layer,
-            nn.Linear(CONCAT_LAYER_SIZE, CONCAT_LAYER_SIZE),
+            nn.Linear(concat_layer_size, concat_layer_size),
 
             self.dropout_layer,
-            nn.Linear(CONCAT_LAYER_SIZE, 1),
+            nn.Linear(concat_layer_size, 1),
 
             nn.Sigmoid()
         )
@@ -160,12 +178,10 @@ class DuplicateSiameseBiLSTM(pl.LightningModule):
         self.valid_metrics = metrics.clone(prefix='val_')
 
     def _extract_post_data(self, post_x):
-        title_tokens, title_masks, desc_tokens, desc_masks, slug, city = post_x
+        text_tokens, text_masks, slug, city = post_x
         features = {
-            "title_tokens": title_tokens,
-            "desc_tokens": desc_tokens,
-            "title_masks": title_masks,
-            "desc_masks": desc_masks,
+            "text_tokens": text_tokens,
+            "text_masks": text_masks,
             "slug": slug,
             "city": city,
         }
@@ -179,8 +195,12 @@ class DuplicateSiameseBiLSTM(pl.LightningModule):
         post1_feature = self.encoder(**post1_input)
         post2_feature = self.encoder(**post2_input)
 
-        concated_features = torch.cat([post1_feature, post2_feature, torch.abs(
-            torch.sub(post1_feature, post2_feature))], dim=1)
+        if COMPARISON == "subtract":
+            concated_features = torch.cat([post1_feature, post2_feature, torch.abs(
+                torch.sub(post1_feature, post2_feature))], dim=1)
+        else:
+            concated_features = torch.cat([post1_feature, post2_feature],  dim=1)
+
         duplicate_score = self.classification_head(concated_features).flatten()
 
         return duplicate_score

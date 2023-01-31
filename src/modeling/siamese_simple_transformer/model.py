@@ -108,6 +108,8 @@ class Transformer(pl.LightningModule):
         dropout_rate):
 
         super().__init__()
+        self.save_hyperparameters()
+
         self.text_embedding = nn.Embedding(text_vocab_size, text_emb_dim)
         self.text_encoder = EncoderBlock(
             text_vocab_size=text_vocab_size,
@@ -124,8 +126,6 @@ class Transformer(pl.LightningModule):
         self.output_layer = nn.Linear(concat_layer_dim, output_feature_dim)
 
     def forward(self, input_ids, attention_mask):
-        # import pdb; pdb.set_trace()
-
         text_embed = self.text_embedding(input_ids)
         text_embed_mean = self.text_encoder(text_embed, mask=attention_mask)
 

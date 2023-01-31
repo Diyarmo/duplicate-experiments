@@ -1,4 +1,3 @@
-from modeling.siamese_bilstm.data_utils import digit_words, digits
 from data.text_normalizer import normalize_text
 import pandas as pd
 import numpy as np
@@ -25,10 +24,16 @@ class DuplicateDataset(Dataset):
             self.data = self.original_data.sample(sample_size).reset_index(drop=True)
 
     def resample_by_label(self):
-        min_sample_count = self.original_data.groupby("is_duplicate")['is_duplicate'].count().min()
-        sampled_inddices = self.original_data.groupby(["is_duplicate"]).apply(lambda x: np.random.choice(x.index, min_sample_count))
+        min_sample_count = self.original_data['is_duplicate'].sum()
+        
+        sampled_inddices = self.original_data.apply(
+            lambda x: np.random.choice(x.index, 3 * min_sample_count) 
+                if len(x) > min_sample_count 
+                else x.index)
+
         sampled_inddices = np.concatenate(sampled_inddices)
-        self.data = self.original_data.loc[sampled_inddices].sample(len(sampled_inddices)).reset_index(drop=True)
+        self.data = self.original_data.loc[sampled_inddices].sample(
+            len(sampled_inddices)).reset_index(drop=True)
 
     def __len__(self):
         return len(self.data)
@@ -72,6 +77,8 @@ class DuplicateDataLoader(pl.LightningDataModule):
         super().__init__()
         self.test_sample_size = test_sample_size
         self.resample_by_label = resample_by_label
+        self.batch_size = batch_size
+        self.text_max_length = text_max_length
 
         self.text_tokenizer = PreTrainedTokenizerFast(tokenizer_file=tokenizer_file)
         self.text_tokenizer.add_special_tokens({'pad_token': '[PAD]'})
@@ -85,9 +92,6 @@ class DuplicateDataLoader(pl.LightningDataModule):
         if test_file:
             self.val = self.read_files(self.test_file)
             print("Val Dataset has", len(self.val.data), "rows!")
-
-        self.batch_size = batch_size
-        self.text_max_length = text_max_length
 
     def read_files(self, data_file):
         df = pd.read_parquet(data_file)
@@ -128,6 +132,4 @@ class DuplicateDataLoader(pl.LightningDataModule):
         if self.test_sample_size:
             self.val.set_sample_data(self.test_sample_size)
         
-        
-
         return DataLoader(self.val, batch_size=self.batch_size, collate_fn=self.collate_batch, num_workers=8)

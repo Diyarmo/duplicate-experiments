@@ -1,4 +1,3 @@
-from modeling.siamese_bilstm.data_utils import digit_words, digits
 from data.text_normalizer import normalize_text
 import pandas as pd
 import numpy as np
@@ -24,31 +23,41 @@ class DuplicateDataset(Dataset):
         else:
             self.data = self.original_data.sample(sample_size)
 
+    def resample_by_label(self):
+        min_sample_count = self.original_data['is_duplicate'].sum()
+
+        sampled_inddices = self.original_data.apply(
+            lambda x: np.random.choice(x.index, 3 * min_sample_count)
+            if len(x) > min_sample_count
+            else x.index)
+
+        sampled_inddices = np.concatenate(sampled_inddices)
+        self.data = self.original_data.loc[sampled_inddices].sample(
+            len(sampled_inddices)).reset_index(drop=True)
+
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, item):
         row = self.data.iloc[item]
 
-        row["post1_title"] = normalize_text(row["post1_title"])
-        row["post2_title"] = normalize_text(row["post2_title"])
-        row["post1_desc"] = normalize_text(row["post1_desc"])
-        row["post2_desc"] = normalize_text(row["post2_desc"])
+        post1_title = normalize_text(row["post1_title"])
+        post1_desc = normalize_text(row["post1_desc"])
+        post2_title = normalize_text(row["post2_title"])
+        post2_desc = normalize_text(row["post2_desc"])
 
         # Post 1 - Original
-        post1_title = row["post1_title"]
-        post1_description = row["post1_desc"]
+        post1_text = f'عنوان آگهی: {post1_title} | توضیحات آگهی: {post1_desc}'
         post1_cat_slug = row["post1_category"]
         post1_city = row["post1_city"]
 
         # Post 2 - Compare
-        post2_title = row["post2_title"]
-        post2_description = row["post2_desc"]
+        post2_text = f'عنوان آگهی: {post2_title} | توضیحات آگهی: {post2_desc}'
         post2_cat_slug = row["post2_category"]
         post2_city = row["post2_city"]
 
-        post1_x = [post1_title, post1_description, post1_cat_slug, post1_city]
-        post2_x = [post2_title, post2_description, post2_cat_slug, post2_city]
+        post1_x = [post1_text, post1_cat_slug, post1_city]
+        post2_x = [post2_text, post2_cat_slug, post2_city]
 
         y_duplicate = row["is_duplicate"]
 
@@ -64,22 +73,12 @@ class DuplicateDataLoader(pl.LightningDataModule):
                  text_max_length: int,
                  train_file: str = None,
                  test_file: str = None,
-                 test_sample_size: int = 0
+                 test_sample_size: int = 0,
+                 resample_by_label: bool = False
                  ):
         super().__init__()
         self.test_sample_size = test_sample_size
-
-        self.train_file = train_file
-        if train_file:
-            self.train = self.read_files(self.train_file)
-            print("Train Dataset has", len(self.train.data), "rows!")
-
-        self.test_file = test_file
-        if test_file:
-            self.val = self.read_files(self.test_file)
-            print("Val Dataset has", len(self.val.data), "rows!")
-
-        self.tokenizer_file = tokenizer_file
+        self.resample_by_label = resample_by_label
         self.batch_size = batch_size
         self.text_max_length = text_max_length
 
@@ -95,71 +94,73 @@ class DuplicateDataLoader(pl.LightningDataModule):
         self.city_tokenizer.classes_ = np.load(
             city_tokenizer_file, allow_pickle=True)
 
+        self.train_file = train_file
+        if train_file:
+            self.train = self.read_files(self.train_file)
+            print("Train Dataset has", len(self.train.data), "rows!")
+
+        self.test_file = test_file
+        if test_file:
+            self.val = self.read_files(self.test_file)
+            print("Val Dataset has", len(self.val.data), "rows!")
+
     def read_files(self, data_file):
         df = pd.read_parquet(data_file)
         df['is_duplicate'] = (df['is_duplicate']).astype(int)
         return DuplicateDataset(df)
 
     def encode_texts(self, texts):
-        texts_encoded = self.text_tokenizer.batch_encode_plus(texts)
-        texts_encoded = self.text_tokenizer.pad(
-            texts_encoded, max_length=self.text_max_length, padding='longest')
-
-        texts_masks = torch.tensor(
-            texts_encoded['attention_mask'], dtype=torch.int64)
-        texts_padded = torch.tensor(
-            texts_encoded['input_ids'], dtype=torch.int64)
-        return texts_padded, texts_masks
+        tokenized_text = self.text_tokenizer(
+            texts, max_length=self.text_max_length, truncation=True, padding="longest", return_tensors="pt")
+        return tokenized_text
 
     def collate_batch(self, batch):
-        post1_titles = []
-        post1_descs = []
+        post1_texts = []
         post1_slugs = []
         post1_cities = []
 
-        post2_titles = []
-        post2_descs = []
+        post2_texts = []
         post2_slugs = []
         post2_cities = []
 
         labels = []
 
         for post1_x, post2_x, _y in batch:
-            post1_titles.append(post1_x[0])
-            post1_descs.append(post1_x[1])
-            post1_slugs.append(post1_x[2])
-            post1_cities.append(post1_x[3])
+            post1_texts.append(post1_x[0])
+            post1_slugs.append(post1_x[1])
+            post1_cities.append(post1_x[2])
 
-            post2_titles.append(post2_x[0])
-            post2_descs.append(post2_x[1])
-            post2_slugs.append(post2_x[2])
-            post2_cities.append(post2_x[3])
+            post2_texts.append(post1_x[0])
+            post2_slugs.append(post1_x[1])
+            post2_cities.append(post1_x[2])
 
             labels.append(_y)
 
-        # Post1 Encodings
-        post1_titles_padded, post1_titles_masks = self.encode_texts(
-            post1_titles)
-        post1_descs_padded, post1_descs_masks = self.encode_texts(post1_descs)
+        post1_tokenized_texts = self.encode_texts(post1_texts)
+        
         post1_slugs_encoded = torch.tensor(
             self.slug_tokenizer.transform(post1_slugs), dtype=torch.int64)
         post1_cities_encoded = torch.tensor(
             self.city_tokenizer.transform(post1_cities), dtype=torch.int64)
 
-        post1_x = [post1_titles_padded, post1_titles_masks, post1_descs_padded,
-                   post1_descs_masks, post1_slugs_encoded, post1_cities_encoded]
+        post1_x = [post1_tokenized_texts["input_ids"],
+                   post1_tokenized_texts["attention_mask"], 
+                   post1_slugs_encoded, 
+                   post1_cities_encoded]
 
         # Post2 Encodings
-        post2_titles_padded, post2_titles_masks = self.encode_texts(
-            post2_titles)
-        post2_descs_padded, post2_descs_masks = self.encode_texts(post2_descs)
+        post2_tokenized_texts = self.encode_texts(post2_texts)
+
         post2_slugs_encoded = torch.tensor(
             self.slug_tokenizer.transform(post2_slugs), dtype=torch.int64)
         post2_cities_encoded = torch.tensor(
             self.city_tokenizer.transform(post2_cities), dtype=torch.int64)
 
-        post2_x = [post2_titles_padded, post2_titles_masks, post2_descs_padded,
-                   post2_descs_masks, post2_slugs_encoded, post2_cities_encoded]
+        post2_x = [post2_tokenized_texts["input_ids"],
+                   post2_tokenized_texts["attention_mask"], 
+                   post2_slugs_encoded, 
+                   post2_cities_encoded]
+
         labels = torch.tensor(labels, dtype=torch.float)
 
         return post1_x, post2_x, labels
@@ -171,7 +172,9 @@ class DuplicateDataLoader(pl.LightningDataModule):
                           num_workers=8)
 
     def val_dataloader(self):
+        if self.resample_by_label:
+            self.val.resample_by_label()
         if self.test_sample_size:
             self.val.set_sample_data(self.test_sample_size)
-
+        
         return DataLoader(self.val, batch_size=self.batch_size, collate_fn=self.collate_batch, num_workers=8)
