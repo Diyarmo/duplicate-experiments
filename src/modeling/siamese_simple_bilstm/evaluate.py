@@ -18,10 +18,14 @@ def get_simple_bilstm_model_predictions(model, data_loader):
 def get_simple_bilstm_model_and_dataloader(
         model_file,
         tokenizer_file,
+        slug_tokenizer_file,
+        city_tokenizer_file,
         test_path) -> Tuple[DuplicateSiameseBiLSTM, DuplicateDataLoader]:
 
     data_loader = DuplicateDataLoader(
         tokenizer_file=tokenizer_file,
+        slug_tokenizer_file=slug_tokenizer_file,
+        city_tokenizer_file=city_tokenizer_file,
         batch_size=256,
         text_max_length=None,
         train_file=None,

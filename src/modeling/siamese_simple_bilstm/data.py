@@ -1,10 +1,12 @@
 from modeling.siamese_bilstm.data_utils import digit_words, digits
 from data.text_normalizer import normalize_text
 import pandas as pd
+import numpy as np
 import pytorch_lightning as pl
 import torch
 import torch.multiprocessing
 from torch.utils.data import DataLoader, Dataset
+from sklearn.preprocessing import LabelEncoder
 
 from transformers import PreTrainedTokenizerFast
 
@@ -36,13 +38,18 @@ class DuplicateDataset(Dataset):
         # Post 1 - Original
         post1_title = row["post1_title"]
         post1_description = row["post1_desc"]
+        post1_cat_slug = row["post1_category"]
+        post1_city = row["post1_city"]
 
         # Post 2 - Compare
         post2_title = row["post2_title"]
         post2_description = row["post2_desc"]
+        post2_cat_slug = row["post2_category"]
+        post2_city = row["post2_city"]
 
-        post1_x = [post1_title, post1_description]
-        post2_x = [post2_title, post2_description]
+        post1_x = [post1_title, post1_description, post1_cat_slug, post1_city]
+        post2_x = [post2_title, post2_description, post2_cat_slug, post2_city]
+
         y_duplicate = row["is_duplicate"]
 
         return post1_x, post2_x, y_duplicate
@@ -51,6 +58,8 @@ class DuplicateDataset(Dataset):
 class DuplicateDataLoader(pl.LightningDataModule):
     def __init__(self,
                  tokenizer_file: str,
+                 slug_tokenizer_file: str,
+                 city_tokenizer_file: str,
                  batch_size,
                  text_max_length: int,
                  train_file: str = None,
@@ -78,6 +87,14 @@ class DuplicateDataLoader(pl.LightningDataModule):
             tokenizer_file=tokenizer_file)
         self.text_tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
+        self.slug_tokenizer = LabelEncoder()
+        self.slug_tokenizer.classes_ = np.load(
+            slug_tokenizer_file, allow_pickle=True)
+
+        self.city_tokenizer = LabelEncoder()
+        self.city_tokenizer.classes_ = np.load(
+            city_tokenizer_file, allow_pickle=True)
+
     def read_files(self, data_file):
         df = pd.read_parquet(data_file)
         df['is_duplicate'] = (df['is_duplicate']).astype(int)
@@ -97,18 +114,26 @@ class DuplicateDataLoader(pl.LightningDataModule):
     def collate_batch(self, batch):
         post1_titles = []
         post1_descs = []
+        post1_slugs = []
+        post1_cities = []
 
         post2_titles = []
         post2_descs = []
+        post2_slugs = []
+        post2_cities = []
 
         labels = []
 
         for post1_x, post2_x, _y in batch:
             post1_titles.append(post1_x[0])
             post1_descs.append(post1_x[1])
+            post1_slugs.append(post1_x[2])
+            post1_cities.append(post1_x[3])
 
             post2_titles.append(post2_x[0])
             post2_descs.append(post2_x[1])
+            post2_slugs.append(post2_x[2])
+            post2_cities.append(post2_x[3])
 
             labels.append(_y)
 
@@ -116,14 +141,25 @@ class DuplicateDataLoader(pl.LightningDataModule):
         post1_titles_padded, post1_titles_masks = self.encode_texts(
             post1_titles)
         post1_descs_padded, post1_descs_masks = self.encode_texts(post1_descs)
-        post1_x = [post1_titles_padded, post1_descs_padded]
+        post1_slugs_encoded = torch.tensor(
+            self.slug_tokenizer.transform(post1_slugs), dtype=torch.int64)
+        post1_cities_encoded = torch.tensor(
+            self.city_tokenizer.transform(post1_cities), dtype=torch.int64)
+
+        post1_x = [post1_titles_padded, post1_titles_masks, post1_descs_padded,
+                   post1_descs_masks, post1_slugs_encoded, post1_cities_encoded]
 
         # Post2 Encodings
         post2_titles_padded, post2_titles_masks = self.encode_texts(
             post2_titles)
         post2_descs_padded, post2_descs_masks = self.encode_texts(post2_descs)
-        post2_x = [post2_titles_padded, post2_descs_padded]
+        post2_slugs_encoded = torch.tensor(
+            self.slug_tokenizer.transform(post2_slugs), dtype=torch.int64)
+        post2_cities_encoded = torch.tensor(
+            self.city_tokenizer.transform(post2_cities), dtype=torch.int64)
 
+        post2_x = [post2_titles_padded, post2_titles_masks, post2_descs_padded,
+                   post2_descs_masks, post2_slugs_encoded, post2_cities_encoded]
         labels = torch.tensor(labels, dtype=torch.float)
 
         return post1_x, post2_x, labels

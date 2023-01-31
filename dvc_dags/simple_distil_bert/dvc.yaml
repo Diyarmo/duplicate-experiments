@@ -1,0 +1,55 @@
+stages:
+
+  train_siamese_simple_distil_bert_general_queue:
+    cmd: >
+      python ../../src/train.py
+      params.yaml
+      siamese_simple_distil_bert
+      ../../storage/data/prepared/general_train.parquet
+      ../../storage/data/prepared/general_val.parquet
+    params:
+    - siamese_simple_distil_bert.max_epochs
+    - siamese_simple_distil_bert.text_max_length
+    - siamese_simple_distil_bert.initial_lr
+    - siamese_simple_distil_bert.output_feature_dim
+    deps:
+    - ../../src/train.py
+    - ../../src/modeling/siamese_simple_distil_bert/model.py
+    - ../../src/modeling/siamese_simple_distil_bert/data.py
+    - ../../storage/data/prepared/general_train.parquet
+    - ../../storage/data/prepared/general_val.parquet
+    outs:
+    - ../../storage/models/siamese_simple_distil_bert_general_model.ckpt:
+        persist: true
+
+
+  evaluate_siamese_simple_distil_bert_general_queue:
+    cmd: >
+      python ../../src/evaluate.py
+      siamese_simple_distil_bert
+      ../../storage/data/prepared/general_val.parquet
+      ../../storage/models/siamese_simple_distil_bert_general_model.ckpt
+    deps:
+    - ../../storage/models/siamese_simple_distil_bert_general_model.ckpt
+    - ../../src/evaluate.py
+    - ../../storage/data/prepared/general_val.parquet
+    - ../../src/modeling/siamese_simple_distil_bert/evaluate.py
+    outs:
+    - ../../storage/data/prepared/siamese_simple_distil_bert_general_val_with_preds.parquet:
+        persist: true
+    metrics:
+    - ../../logs/siamese_simple_distil_bert_general_scores_file.json:
+        persist: true
+
+
+  update_readme:
+    cmd: >
+      python ../../src/update_readme.py
+      params.yaml
+      ../basic/params.yaml
+      siamese_simple_distil_bert
+      ../../logs/siamese_simple_distil_bert_general_scores_file.json
+    deps:
+    - ../../src/update_readme.py
+    - ../../storage/data/prepared/siamese_simple_distil_bert_general_val_with_preds.parquet
+    - ../../logs/siamese_simple_distil_bert_general_scores_file.json

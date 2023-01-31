@@ -1,0 +1,21 @@
+experiment_name: transformer_40k_postdiff
+
+siamese_simple_transformer:
+    text_max_length: 512
+    text_emb_dim: 128
+    text_hidden_dim: 256
+    text_num_layers: 2
+    num_heads: 4
+    output_feature_dim: 256
+    features_emb_dim: 20
+    max_epochs: 10
+    dropout_rate: 0.2
+    batch_size: 128
+    initial_lr: 0.001
+    accumulate_grad_batches: 2
+    experiment_specs:
+        - "Simple MulitLayer Transformer"
+        - "Using {title, desc} features in encoder"
+        - "Using {transformer} in encoder"
+        - "Using {attention} to aggregate embs in encoder"
+        - "Using {subtract, concat, fully-connected} for output"

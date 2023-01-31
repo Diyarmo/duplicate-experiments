@@ -1,9 +1,47 @@
+import math
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 from torch import nn
 
 from torchmetrics import Accuracy, MetricCollection, AUROC
+
+
+class Attention(nn.Module):
+    def __init__(self, embed_dim):
+        super(Attention, self).__init__()
+
+        self.emb_size = embed_dim
+        self.weight = nn.Parameter(torch.Tensor(self.emb_size, 1))
+
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        nn.init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+
+    def forward(self, x, mask=None):
+        # Here    x should be [batch_size, time_step, emb_size]
+        #      mask should be [batch_size, time_step, 1]
+
+        # Copy the Attention Matrix for batch_size times
+        W_bs = self.weight.unsqueeze(0).repeat(x.size()[0], 1, 1)
+        # Dot product between input and attention matrix
+        scores = torch.bmm(x, W_bs)
+        scores = torch.tanh(scores)
+
+        if mask is not None:
+            mask = mask.long()
+            mask = torch.unsqueeze(mask, -1)
+            scores = scores.masked_fill(mask == 0, -1e9)
+
+        a_ = torch.softmax(scores.squeeze(-1), dim=-1)
+        a = a_.unsqueeze(-1).repeat(1, 1, x.size()[2])
+
+        weighted_input = x * a
+
+        output = torch.sum(weighted_input, dim=1)
+
+        return output, a_
 
 
 class BiLSTMBlock(nn.Module):
@@ -14,10 +52,11 @@ class BiLSTMBlock(nn.Module):
 
         self.bilstm_layers = nn.LSTM(
             text_emb_dim, text_emb_dim, bidirectional=True, num_layers=num_layers)
+        self.attention = Attention(2 * text_emb_dim)
 
     def forward(self, text_embed, mask=None):
         text_embed, _ = self.bilstm_layers(text_embed)
-        text_embed_mean = torch.mean(text_embed, dim=1)
+        text_embed_mean, _ = self.attention(text_embed, mask)
         return text_embed_mean
 
 
@@ -26,18 +65,24 @@ class DeepBiLSTM(pl.LightningModule):
                  text_vocab_size,
                  text_emb_dim,
                  text_num_layers,
+                 slug_vocab_size,
+                 city_vocab_size,
+                 features_emb_dim,
                  output_feature_dim,
                  dropout_rate: float):
         super().__init__()
         self.save_hyperparameters()
 
         self.text_embedding = nn.Embedding(text_vocab_size, text_emb_dim)
+        self.slug_embedding = nn.Embedding(slug_vocab_size, features_emb_dim)
+        self.city_embedding = nn.Embedding(city_vocab_size, features_emb_dim)
 
         self.bilstm = BiLSTMBlock(
             text_emb_dim=text_emb_dim, num_layers=text_num_layers)
 
-        # Title + Desc
-        concat_layer_dim = (2 * text_emb_dim) + (2 * text_emb_dim)
+        # Title + Desc + Slug + City
+        concat_layer_dim = (2 * text_emb_dim) + \
+            (2 * text_emb_dim) + (2 * features_emb_dim)
         self.dropout_layer = nn.Dropout(dropout_rate)
 
         self.output_layer = nn.Sequential(
@@ -50,15 +95,18 @@ class DeepBiLSTM(pl.LightningModule):
             nn.ReLU(inplace=True),
         )
 
-    def forward(self, title_tokens, desc_tokens):
+    def forward(self, title_tokens, title_masks, desc_tokens, desc_masks, slug, city):
         title_embed = self.text_embedding(title_tokens)
-        title_embed_mean = self.bilstm(title_embed)
+        title_embed_mean = self.bilstm(title_embed, title_masks)
 
         desc_embed = self.text_embedding(desc_tokens)
-        desc_embed_mean = self.bilstm(desc_embed)
+        desc_embed_mean = self.bilstm(desc_embed, desc_masks)
+
+        slug_embed = self.slug_embedding(slug)
+        city_embed = self.city_embedding(city)
 
         concated_features = torch.cat(
-            [title_embed_mean, desc_embed_mean], dim=1)
+            [title_embed_mean, desc_embed_mean, slug_embed, city_embed], dim=1)
 
         # TODO: try tanh, relu, sigmoid, MultiheadAttention, ELU
         output = torch.tanh(self.output_layer(concated_features))
@@ -71,6 +119,9 @@ class DuplicateSiameseBiLSTM(pl.LightningModule):
                  text_vocab_size,
                  text_emb_dim,
                  text_num_layers,
+                 slug_vocab_size,
+                 city_vocab_size,
+                 features_emb_dim,
                  output_feature_dim,
                  dropout_rate: float,
                  initial_lr):
@@ -79,10 +130,13 @@ class DuplicateSiameseBiLSTM(pl.LightningModule):
         self.encoder = DeepBiLSTM(text_vocab_size,
                                   text_emb_dim,
                                   text_num_layers,
+                                  slug_vocab_size,
+                                  city_vocab_size,
+                                  features_emb_dim,
                                   output_feature_dim,
                                   dropout_rate)
 
-        CONCAT_LAYER_SIZE = 2 * output_feature_dim
+        CONCAT_LAYER_SIZE = 3 * output_feature_dim
 
         self.initial_lr = initial_lr
 
@@ -106,10 +160,14 @@ class DuplicateSiameseBiLSTM(pl.LightningModule):
         self.valid_metrics = metrics.clone(prefix='val_')
 
     def _extract_post_data(self, post_x):
-        title_tokens, desc_tokens = post_x
+        title_tokens, title_masks, desc_tokens, desc_masks, slug, city = post_x
         features = {
             "title_tokens": title_tokens,
             "desc_tokens": desc_tokens,
+            "title_masks": title_masks,
+            "desc_masks": desc_masks,
+            "slug": slug,
+            "city": city,
         }
         return features
 
@@ -121,7 +179,8 @@ class DuplicateSiameseBiLSTM(pl.LightningModule):
         post1_feature = self.encoder(**post1_input)
         post2_feature = self.encoder(**post2_input)
 
-        concated_features = torch.cat([post1_feature, post2_feature], dim=1)
+        concated_features = torch.cat([post1_feature, post2_feature, torch.abs(
+            torch.sub(post1_feature, post2_feature))], dim=1)
         duplicate_score = self.classification_head(concated_features).flatten()
 
         return duplicate_score
