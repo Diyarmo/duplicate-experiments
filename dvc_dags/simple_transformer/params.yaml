@@ -1,5 +1,3 @@
-experiment_name: transformer_40k_postdiff
-
 siamese_simple_transformer:
     text_max_length: 512
     text_emb_dim: 128
