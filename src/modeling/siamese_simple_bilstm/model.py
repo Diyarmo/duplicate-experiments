@@ -8,7 +8,7 @@ from torchmetrics import Accuracy, MetricCollection, AUROC
 
 TEXT_AGGREGATION = "mean" # "attention", "mean"
 FIELDS_ENCODING = "none" # "embedding", "none"
-COMPARISON = "none" # "subtract", "none"
+COMPARISON = "subtract" # "subtract", "none"
 
 
 

@@ -13,5 +13,5 @@ siamese_simple_bilstm:
     - "Using {title, desc} features in encoder"
     - "Using {bilstm} in encoder"
     - "Using {mean} to aggregate embs in encoder"
-    - "Using {concat, fully-connected} for output"
+    - "Using {subtract, concat, fully-connected} for output"
     
