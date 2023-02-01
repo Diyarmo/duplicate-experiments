@@ -57,13 +57,17 @@ elif model_name == "siamese_simple_transformer":
 elif model_name == "siamese_simple_distil_bert":
     train_file = sys.argv[3]
     test_file = sys.argv[4]
-    
+    slug_tokenizer_file = sys.argv[5]
+    city_tokenizer_file = sys.argv[6]
+
     print(f"Training {model_name} model...")
     models_params = params[model_name]
 
     model = train_simple_distil_bert_model(
         train_file=train_file,
         test_file=test_file,
+        slug_tokenizer_file=slug_tokenizer_file,
+        city_tokenizer_file=city_tokenizer_file,
         models_params=models_params,
         experiment_name=experiment_name
     )
