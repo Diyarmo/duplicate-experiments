@@ -51,6 +51,8 @@ elif model_name == "siamese_simple_transformer":
         train_file=train_file,
         test_file=test_file,
         tokenizer_model_filename=tokenizer_file,
+        slug_tokenizer_file=slug_tokenizer_file,
+        city_tokenizer_file=city_tokenizer_file,
         models_params=models_params,
         experiment_name=experiment_name
     )

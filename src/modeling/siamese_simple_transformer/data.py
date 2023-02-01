@@ -25,15 +25,14 @@ class DuplicateDataset(Dataset):
 
     def resample_by_label(self):
         min_sample_count = self.original_data['is_duplicate'].sum()
-        
-        sampled_inddices = self.original_data.apply(
-            lambda x: np.random.choice(x.index, 3 * min_sample_count) 
-                if len(x) > min_sample_count 
-                else x.index)
 
-        sampled_inddices = np.concatenate(sampled_inddices)
-        self.data = self.original_data.loc[sampled_inddices].sample(
-            len(sampled_inddices)).reset_index(drop=True)
+        sampled_indices = self.original_data.groupby(["is_duplicate"]).apply(
+            lambda x: np.random.choice(x.index, 3 * min_sample_count, replace=False)
+            if len(x) > min_sample_count
+            else np.random.choice(x.index, min_sample_count, replace=False))
+        sampled_indices = np.concatenate(sampled_indices)
+        self.data = self.original_data.loc[sampled_indices].sample(
+            len(sampled_indices)).reset_index(drop=True)
 
     def __len__(self):
         return len(self.data)
@@ -67,6 +66,8 @@ class DuplicateDataset(Dataset):
 class DuplicateDataLoader(pl.LightningDataModule):
     def __init__(self,
                  tokenizer_file,
+                 slug_tokenizer_file: str,
+                 city_tokenizer_file: str,
                  batch_size,
                  text_max_length: int,
                  train_file: str = None,
@@ -82,6 +83,14 @@ class DuplicateDataLoader(pl.LightningDataModule):
 
         self.text_tokenizer = PreTrainedTokenizerFast(tokenizer_file=tokenizer_file)
         self.text_tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+
+        self.slug_tokenizer = LabelEncoder()
+        self.slug_tokenizer.classes_ = np.load(
+            slug_tokenizer_file, allow_pickle=True)
+
+        self.city_tokenizer = LabelEncoder()
+        self.city_tokenizer.classes_ = np.load(
+            city_tokenizer_file, allow_pickle=True)
 
         self.train_file = train_file
         if train_file:
@@ -105,20 +114,54 @@ class DuplicateDataLoader(pl.LightningDataModule):
 
     def collate_batch(self, batch):
         post1_texts = []
+        post1_slugs = []
+        post1_cities = []
+
         post2_texts = []
+        post2_slugs = []
+        post2_cities = []
+
         labels = []
 
         for post1_x, post2_x, _y in batch:
             post1_texts.append(post1_x[0])
+            post1_slugs.append(post1_x[1])
+            post1_cities.append(post1_x[2])
+
             post2_texts.append(post2_x[0])
+            post2_slugs.append(post2_x[1])
+            post2_cities.append(post2_x[2])
+
             labels.append(_y)
 
         post1_tokenized_texts = self.encode_texts(post1_texts)
+        
+        post1_slugs_encoded = torch.tensor(
+            self.slug_tokenizer.transform(post1_slugs), dtype=torch.int64)
+        post1_cities_encoded = torch.tensor(
+            self.city_tokenizer.transform(post1_cities), dtype=torch.int64)
+
+        post1_x = [post1_tokenized_texts["input_ids"],
+                   post1_tokenized_texts["attention_mask"], 
+                   post1_slugs_encoded, 
+                   post1_cities_encoded]
+
+        # Post2 Encodings
         post2_tokenized_texts = self.encode_texts(post2_texts)
+
+        post2_slugs_encoded = torch.tensor(
+            self.slug_tokenizer.transform(post2_slugs), dtype=torch.int64)
+        post2_cities_encoded = torch.tensor(
+            self.city_tokenizer.transform(post2_cities), dtype=torch.int64)
+
+        post2_x = [post2_tokenized_texts["input_ids"],
+                   post2_tokenized_texts["attention_mask"], 
+                   post2_slugs_encoded, 
+                   post2_cities_encoded]
 
         labels = torch.tensor(labels, dtype=torch.float)
 
-        return post1_tokenized_texts, post2_tokenized_texts, labels
+        return post1_x, post2_x, labels
 
     def train_dataloader(self):
         return DataLoader(self.train, batch_size=self.batch_size,

@@ -175,7 +175,5 @@ class DuplicateDataLoader(pl.LightningDataModule):
             self.val.resample_by_label()
         if self.test_sample_size:
             self.val.set_sample_data(self.test_sample_size)
-        
-        
 
         return DataLoader(self.val, batch_size=self.batch_size, collate_fn=self.collate_batch, num_workers=8)

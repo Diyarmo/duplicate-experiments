@@ -40,12 +40,16 @@ stages:
       siamese_simple_transformer
       ../../storage/data/prepared/general_val.parquet
       ../../storage/models/tokenizers/tokenizer_general.json
+      ../../storage/models/categorical_encodings/general_categories_encoding.npy
+      ../../storage/models/categorical_encodings/general_cities_encoding.npy
       ../../storage/models/siamese_simple_transformer_general_model.ckpt
     deps:
     - ../../storage/models/siamese_simple_transformer_general_model.ckpt
     - ../../src/evaluate.py
     - ../../storage/data/prepared/general_val.parquet
     - ../../storage/models/tokenizers/tokenizer_general.json
+    - ../../storage/models/categorical_encodings/general_categories_encoding.npy
+    - ../../storage/models/categorical_encodings/general_cities_encoding.npy
     - ../../src/modeling/siamese_simple_transformer/evaluate.py
     outs:
     - ../../storage/data/prepared/siamese_simple_transformer_general_val_with_preds.parquet:

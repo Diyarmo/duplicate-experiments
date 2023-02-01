@@ -91,11 +91,15 @@ elif model_name == "siamese_simple_distil_bert":
 
 elif model_name == "siamese_simple_transformer":
     tokenizer_file = sys.argv[3]
-    model_path = sys.argv[4]
+    slug_tokenizer_file = sys.argv[4]
+    city_tokenizer_file = sys.argv[5]
+    model_path = sys.argv[6]
 
     model, data_loader = get_simple_transformer_model_and_dataloader(
         model_file=model_path,
         tokenizer_file=tokenizer_file,
+        slug_tokenizer_file=slug_tokenizer_file,
+        city_tokenizer_file=city_tokenizer_file,
         test_path=test_path,
     )
 

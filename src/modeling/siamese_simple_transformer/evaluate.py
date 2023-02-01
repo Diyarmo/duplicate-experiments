@@ -16,12 +16,16 @@ def get_simple_transformer_model_predictions(model, data_loader):
 def get_simple_transformer_model_and_dataloader(
         model_file,
         tokenizer_file,
+        slug_tokenizer_file,
+        city_tokenizer_file,
         test_path) -> Tuple[DuplicateSiameseTransformer, DuplicateDataLoader]:
 
     data_loader = DuplicateDataLoader(
         tokenizer_file=tokenizer_file,
+        slug_tokenizer_file=slug_tokenizer_file,
+        city_tokenizer_file=city_tokenizer_file,        
         batch_size=128,
-        text_max_length=None,
+        text_max_length=512,
         train_file=None,
         test_file=test_path,
         resample_by_label=True).val_dataloader()

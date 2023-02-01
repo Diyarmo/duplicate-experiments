@@ -15,6 +15,8 @@ def train_model(
         train_file,
         test_file,
         tokenizer_model_filename,
+        slug_tokenizer_file,
+        city_tokenizer_file,
         models_params,
         experiment_name
 ):
@@ -24,6 +26,7 @@ def train_model(
     text_emb_dim = models_params['text_emb_dim']
     text_hidden_dim = models_params['text_hidden_dim']
     text_num_layers = models_params['text_num_layers']
+    features_emb_dim = models_params['features_emb_dim']
     output_feature_dim = models_params['output_feature_dim']
     num_heads = models_params['num_heads']
     dropout_rate = models_params['dropout_rate']
@@ -36,6 +39,8 @@ def train_model(
     # Load Data
     data_loader = DuplicateDataLoader(
         tokenizer_file=tokenizer_model_filename,
+        slug_tokenizer_file=slug_tokenizer_file,
+        city_tokenizer_file=city_tokenizer_file,        
         batch_size=batch_size,
         text_max_length=text_max_length,
         train_file=train_file,
@@ -55,11 +60,14 @@ def train_model(
         print("Creating New Model.")
         model = DuplicateSiameseTransformer(
             text_vocab_size=data_loader.text_tokenizer.vocab_size,
+            slug_vocab_size=len(data_loader.slug_tokenizer.classes_),
+            city_vocab_size=len(data_loader.city_tokenizer.classes_),            
             text_emb_dim=text_emb_dim,
             text_num_layers=text_num_layers,
             text_hidden_dim=text_hidden_dim,
             num_heads=num_heads,
             output_feature_dim=output_feature_dim,
+            features_emb_dim=features_emb_dim,
             dropout_rate=dropout_rate,
             initial_lr=initial_lr
         )
@@ -95,7 +103,6 @@ def train_model(
                                  offline=True)
                          ],
                          accumulate_grad_batches=accumulate_grad_batches,
-                         val_check_interval=0.5,
                          )
 
     trainer.fit(model, data_loader)

@@ -7,6 +7,9 @@ from torch.cuda.amp import autocast
 from torchmetrics import Accuracy, MetricCollection, AUROC
 from transformers import AutoModel
 
+TEXT_AGGREGATION = "attention"  # "attention", "mean"
+FIELDS_ENCODING = "embedding"  # "embedding", "none"
+COMPARISON = "subtract"  # "subtract", "none"
 
 class PositionalEncoding(pl.LightningModule):
 
@@ -71,25 +74,28 @@ class EncoderBlock(pl.LightningModule):
         
         super().__init__()
         self.text_emb_dim = text_emb_dim
+
+        self.text_embedding = nn.Embedding(text_vocab_size, text_emb_dim)
+
         self.pos_encoder = PositionalEncoding(d_model=text_emb_dim,
           dropout=dropout_rate,
           vocab_size=text_vocab_size)
+
         encoder_layer = nn.TransformerEncoderLayer(d_model=text_emb_dim,
           nhead=num_heads,
           dim_feedforward=text_hidden_dim,
           dropout=dropout_rate)
+
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer,
           num_layers=num_layers)
 
         self.attention = Attention(text_emb_dim)
 
     def forward(self, x, mask=None):
-        # import pdb; pdb.set_trace()
-
+        x = self.text_embedding(x)
         x = x * math.sqrt(self.text_emb_dim)
         x = self.pos_encoder(x)
         x = self.transformer_encoder(x, src_key_padding_mask=torch.transpose(mask, 0, 1).type(torch.float))
-        # x = x.mean(dim=1)
         x, _ = self.attention(x, mask)
 
         return x
@@ -103,6 +109,9 @@ class Transformer(pl.LightningModule):
         text_emb_dim, 
         text_hidden_dim, 
         text_num_layers, 
+        slug_vocab_size,
+        city_vocab_size,  
+        features_emb_dim,      
         num_heads, 
         output_feature_dim, 
         dropout_rate):
@@ -110,7 +119,6 @@ class Transformer(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
 
-        self.text_embedding = nn.Embedding(text_vocab_size, text_emb_dim)
         self.text_encoder = EncoderBlock(
             text_vocab_size=text_vocab_size,
             text_emb_dim=text_emb_dim,
@@ -119,20 +127,42 @@ class Transformer(pl.LightningModule):
             dropout_rate=dropout_rate,
             num_heads=num_heads)
 
-
         concat_layer_dim = text_emb_dim
-        self.concat_layer = nn.Linear(concat_layer_dim, concat_layer_dim)
+
+        if FIELDS_ENCODING == "embedding":
+            self.slug_embedding = nn.Embedding(slug_vocab_size, features_emb_dim)
+            self.city_embedding = nn.Embedding(city_vocab_size, features_emb_dim)
+            concat_layer_dim += 2 * features_emb_dim            
+
         self.dropout_layer = nn.Dropout(dropout_rate)
-        self.output_layer = nn.Linear(concat_layer_dim, output_feature_dim)
 
-    def forward(self, input_ids, attention_mask):
-        text_embed = self.text_embedding(input_ids)
-        text_embed_mean = self.text_encoder(text_embed, mask=attention_mask)
+        self.output_layer = nn.Sequential(
+            self.dropout_layer,
+            nn.Linear(concat_layer_dim, concat_layer_dim),
+            nn.ReLU(inplace=True),
 
-        concated_features = torch.cat([text_embed_mean], dim=1)
-        concated_features = self.dropout_layer(concated_features)
-        concated_features = torch.relu(self.concat_layer(concated_features))
-        output = self.output_layer(concated_features)
+            self.dropout_layer,
+            nn.Linear(concat_layer_dim, output_feature_dim),
+            nn.ReLU(inplace=True),
+        )
+
+    def forward(self, text_tokens, text_masks, slug, city):
+        text_embed_mean = self.text_encoder(text_tokens, text_masks)
+
+
+        if FIELDS_ENCODING == "embedding":
+            slug_embed = self.slug_embedding(slug)
+            city_embed = self.city_embedding(city)
+
+            concated_features = torch.cat(
+                [text_embed_mean, slug_embed, city_embed], dim=1)
+        else:
+            concated_features = torch.cat(
+                [text_embed_mean], dim=1)
+
+        # TODO: try tanh, relu, sigmoid, MultiheadAttention, ELU
+        output = torch.tanh(self.output_layer(concated_features))
+
         return output
 
 
@@ -144,22 +174,32 @@ class DuplicateSiameseTransformer(pl.LightningModule):
                  text_num_layers,
                  num_heads,
                  output_feature_dim,
+                 features_emb_dim,
+                 city_vocab_size,
+                 slug_vocab_size,
                  dropout_rate: float,
                  initial_lr
                  ):
+
         super().__init__()
         self.save_hyperparameters()
         self.encoder = Transformer(
-            text_vocab_size, 
-            text_emb_dim, 
-            text_hidden_dim, 
-            text_num_layers, 
-            num_heads,
-            output_feature_dim, 
-            dropout_rate
+            text_vocab_size=text_vocab_size, 
+            text_emb_dim=text_emb_dim, 
+            text_hidden_dim=text_hidden_dim, 
+            text_num_layers=text_num_layers, 
+            num_heads=num_heads,
+            output_feature_dim=output_feature_dim, 
+            features_emb_dim=features_emb_dim,
+            slug_vocab_size=slug_vocab_size,
+            city_vocab_size=city_vocab_size,  
+            dropout_rate=dropout_rate
         )
 
-        CONCAT_LAYER_SIZE = 3 * output_feature_dim
+        if COMPARISON == "subtract":
+            concat_layer_dim = 3 * output_feature_dim
+        else:
+            concat_layer_dim = 2 * output_feature_dim
 
         self.initial_lr = initial_lr
 
@@ -167,9 +207,9 @@ class DuplicateSiameseTransformer(pl.LightningModule):
 
         self.classification_head = nn.Sequential(
             self.dropout_layer,
-            nn.Linear(CONCAT_LAYER_SIZE, CONCAT_LAYER_SIZE),
+            nn.Linear(concat_layer_dim, concat_layer_dim),
             self.dropout_layer,
-            nn.Linear(CONCAT_LAYER_SIZE, 1),
+            nn.Linear(concat_layer_dim, 1),
 
         )
 
@@ -180,16 +220,31 @@ class DuplicateSiameseTransformer(pl.LightningModule):
         self.train_metrics = metrics.clone(prefix='train_')
         self.valid_metrics = metrics.clone(prefix='val_')
 
+    def _extract_post_data(self, post_x):
+        text_tokens, text_masks, slug, city = post_x
+        features = {
+            "text_tokens": text_tokens,
+            "text_masks": text_masks,
+            "slug": slug,
+            "city": city,
+        }
+        return features
+
     def forward(self, post1_x, post2_x):
-        post1_feature = self.encoder(input_ids=post1_x['input_ids'], attention_mask=post1_x['attention_mask'])
-        post2_feature = self.encoder(
-            input_ids=post2_x['input_ids'], attention_mask=post2_x['attention_mask'])
+        post1_input = self._extract_post_data(post1_x)
+        post2_input = self._extract_post_data(post2_x)
+
+        post1_feature = self.encoder(**post1_input)
+        post2_feature = self.encoder(**post2_input)
 
         # TODO: Concat both posts and apply attention on that
-        concated_features = torch.cat([post1_feature, post2_feature, torch.abs(
-            torch.sub(post1_feature, post2_feature))], dim=1)
-        duplicate_score = self.classification_head(
-            concated_features).flatten()
+        if COMPARISON == "subtract":
+            concated_features = torch.cat([post1_feature, post2_feature, torch.abs(
+                torch.sub(post1_feature, post2_feature))], dim=1)
+        else:
+            concated_features = torch.cat([post1_feature, post2_feature],  dim=1)
+
+        duplicate_score = self.classification_head(concated_features).flatten()
 
         return duplicate_score
 
@@ -221,7 +276,6 @@ class DuplicateSiameseTransformer(pl.LightningModule):
             post1_x=post1_x, post2_x=post2_x)
 
         duplicate_loss = F.binary_cross_entropy_with_logits(duplicate_score, y_duplicate)
-
 
         self.log("val_duplicate_loss", duplicate_loss, on_step=True,
                  on_epoch=True, prog_bar=True, logger=True)
