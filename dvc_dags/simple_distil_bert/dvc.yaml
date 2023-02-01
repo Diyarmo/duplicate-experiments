@@ -7,17 +7,22 @@ stages:
       siamese_simple_distil_bert
       ../../storage/data/prepared/general_train.parquet
       ../../storage/data/prepared/general_val.parquet
+      ../../storage/models/categorical_encodings/general_categories_encoding.npy
+      ../../storage/models/categorical_encodings/general_cities_encoding.npy      
     params:
     - siamese_simple_distil_bert.max_epochs
     - siamese_simple_distil_bert.text_max_length
     - siamese_simple_distil_bert.initial_lr
     - siamese_simple_distil_bert.output_feature_dim
+    - siamese_simple_distil_bert.features_emb_dim
     deps:
     - ../../src/train.py
     - ../../src/modeling/siamese_simple_distil_bert/model.py
     - ../../src/modeling/siamese_simple_distil_bert/data.py
     - ../../storage/data/prepared/general_train.parquet
     - ../../storage/data/prepared/general_val.parquet
+    - ../../storage/models/categorical_encodings/general_categories_encoding.npy
+    - ../../storage/models/categorical_encodings/general_cities_encoding.npy  
     outs:
     - ../../storage/models/siamese_simple_distil_bert_general_model.ckpt:
         persist: true
@@ -29,11 +34,15 @@ stages:
       siamese_simple_distil_bert
       ../../storage/data/prepared/general_val.parquet
       ../../storage/models/siamese_simple_distil_bert_general_model.ckpt
+      ../../storage/models/categorical_encodings/general_categories_encoding.npy
+      ../../storage/models/categorical_encodings/general_cities_encoding.npy        
     deps:
     - ../../storage/models/siamese_simple_distil_bert_general_model.ckpt
     - ../../src/evaluate.py
     - ../../storage/data/prepared/general_val.parquet
     - ../../src/modeling/siamese_simple_distil_bert/evaluate.py
+    - ../../storage/models/categorical_encodings/general_categories_encoding.npy
+    - ../../storage/models/categorical_encodings/general_cities_encoding.npy  
     outs:
     - ../../storage/data/prepared/siamese_simple_distil_bert_general_val_with_preds.parquet:
         persist: true

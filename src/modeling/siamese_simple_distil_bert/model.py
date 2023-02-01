@@ -7,6 +7,10 @@ from torch.cuda.amp import autocast
 from torchmetrics import Accuracy, MetricCollection, AUROC
 from transformers import AutoModel
 
+TEXT_AGGREGATION = "attention"  # "attention", "mean"
+FIELDS_ENCODING = "embedding"  # "embedding", "none"
+COMPARISON = "subtract"  # "subtract", "none"
+
 
 class Attention(pl.LightningModule):
     def __init__(self, embed_dim):
@@ -45,32 +49,110 @@ class Attention(pl.LightningModule):
         return output, a_
 
 
-class DuplicateSiameseBert(pl.LightningModule):
-    def __init__(self,
-                 output_feature_dim,
-                 dropout_rate: float,
-                 initial_lr):
+class PLM_Block(pl.LightningModule):
+    def __init__(self, 
+    ):
         super().__init__()
-        self.save_hyperparameters()
+        self.bert_emb_dim = 768
         self.encoder = AutoModel.from_pretrained(
             "HooshvareLab/distilbert-fa-zwnj-base")
 
         for p in self.encoder.parameters():
             p.requires_grad = False
 
-        CONCAT_LAYER_SIZE = 3 * output_feature_dim
+        self.attention = Attention(self.bert_emb_dim)
+
+    def forward(self, input_ids, attention_mask):
+        text_embed = self.encoder(input_ids, attention_mask)['last_hidden_state']
+        text_embed_mean, _ = self.attention(text_embed)
+        return text_embed_mean
+
+
+class DistilBert(pl.LightningModule):
+    def __init__(self,
+                 slug_vocab_size,
+                 city_vocab_size,
+                 features_emb_dim,
+                 output_feature_dim,
+                 dropout_rate: float,
+                 ):
+        super().__init__()
+        self.save_hyperparameters()
+
+        self.text_encoder = PLM_Block()
+
+        concat_layer_dim = self.text_encoder.bert_emb_dim
+
+        if FIELDS_ENCODING == "embedding":
+            self.slug_embedding = nn.Embedding(slug_vocab_size, features_emb_dim)
+            self.city_embedding = nn.Embedding(city_vocab_size, features_emb_dim)
+            concat_layer_dim += 2 * features_emb_dim
+
+
+        self.dropout_layer = nn.Dropout(dropout_rate)
+
+        self.output_layer = nn.Sequential(
+            self.dropout_layer,
+            nn.Linear(concat_layer_dim, concat_layer_dim),
+            nn.ReLU(inplace=True),
+
+            self.dropout_layer,
+            nn.Linear(concat_layer_dim, output_feature_dim),
+            nn.ReLU(inplace=True),
+        )
+
+    def forward(self, text_tokens, text_masks, slug, city):
+        text_embed_mean = self.text_encoder(text_tokens, text_masks)
+
+
+        if FIELDS_ENCODING == "embedding":
+            slug_embed = self.slug_embedding(slug)
+            city_embed = self.city_embedding(city)
+
+            concated_features = torch.cat(
+                [text_embed_mean, slug_embed, city_embed], dim=1)
+        else:
+            concated_features = torch.cat(
+                [text_embed_mean], dim=1)
+
+        # TODO: try tanh, relu, sigmoid, MultiheadAttention, ELU
+        output = torch.tanh(self.output_layer(concated_features))
+
+        return output
+
+
+class DuplicateSiameseBert(pl.LightningModule):
+    def __init__(self,
+                 slug_vocab_size,
+                 city_vocab_size,
+                 features_emb_dim,
+                 output_feature_dim,
+                 dropout_rate: float,
+                 initial_lr):
+        super().__init__()
+        self.save_hyperparameters()
+
+        self.encoder = DistilBert(
+            slug_vocab_size,
+            city_vocab_size,
+            features_emb_dim,
+            output_feature_dim,
+            dropout_rate)
+
+        if COMPARISON == "subtract":
+            concat_layer_dim = 3 * output_feature_dim
+        else:
+            concat_layer_dim = 2 * output_feature_dim
 
         self.initial_lr = initial_lr
-        self.attenion = Attention(output_feature_dim)
-        # self.MHA = nn.MultiheadAttention(
-        #     output_feature_dim, num_heads=2, dropout=0.2)
+
         self.dropout_layer = nn.Dropout(dropout_rate)
 
         self.classification_head = nn.Sequential(
             self.dropout_layer,
-            nn.Linear(CONCAT_LAYER_SIZE, output_feature_dim),
+            nn.Linear(concat_layer_dim, concat_layer_dim),
             self.dropout_layer,
-            nn.Linear(output_feature_dim, 1),
+            nn.Linear(concat_layer_dim, 1),
 
         )
 
@@ -81,22 +163,31 @@ class DuplicateSiameseBert(pl.LightningModule):
         self.train_metrics = metrics.clone(prefix='train_')
         self.valid_metrics = metrics.clone(prefix='val_')
 
+    def _extract_post_data(self, post_x):
+        text_tokens, text_masks, slug, city = post_x
+        features = {
+            "text_tokens": text_tokens,
+            "text_masks": text_masks,
+            "slug": slug,
+            "city": city,
+        }
+        return features
+
     def forward(self, post1_x, post2_x):
-        # import pdb; pdb.set_trace()
+        post1_input = self._extract_post_data(post1_x)
+        post2_input = self._extract_post_data(post2_x)
 
-        post1_feature = self.encoder(
-            input_ids=post1_x['input_ids'], attention_mask=post1_x['attention_mask'])['last_hidden_state']
-        post2_feature = self.encoder(
-            input_ids=post2_x['input_ids'], attention_mask=post2_x['attention_mask'])['last_hidden_state']
-
-        post1_feature, _ = self.attenion(post1_feature)
-        post2_feature, _ = self.attenion(post2_feature)
+        post1_feature = self.encoder(**post1_input)
+        post2_feature = self.encoder(**post2_input)
 
         # TODO: Concat both posts and apply attention on that
-        concated_features = torch.cat([post1_feature, post2_feature, torch.abs(
-            torch.sub(post1_feature, post2_feature))], dim=1)
-        duplicate_score = self.classification_head(
-            concated_features).flatten()
+        if COMPARISON == "subtract":
+            concated_features = torch.cat([post1_feature, post2_feature, torch.abs(
+                torch.sub(post1_feature, post2_feature))], dim=1)
+        else:
+            concated_features = torch.cat([post1_feature, post2_feature],  dim=1)
+
+        duplicate_score = self.classification_head(concated_features).flatten()
 
         return duplicate_score
 
@@ -107,7 +198,8 @@ class DuplicateSiameseBert(pl.LightningModule):
             duplicate_score = self.forward(
                 post1_x=post1_x, post2_x=post2_x)
 
-            duplicate_loss = F.binary_cross_entropy_with_logits(duplicate_score, y_duplicate)
+            duplicate_loss = F.binary_cross_entropy_with_logits(
+                duplicate_score, y_duplicate)
 
         self.log("duplicate_loss", duplicate_loss, on_step=True,
                  on_epoch=True, prog_bar=True, logger=True)
@@ -129,8 +221,8 @@ class DuplicateSiameseBert(pl.LightningModule):
             duplicate_score = self.forward(
                 post1_x=post1_x, post2_x=post2_x)
 
-            duplicate_loss = F.binary_cross_entropy_with_logits(duplicate_score, y_duplicate)
-
+            duplicate_loss = F.binary_cross_entropy_with_logits(
+                duplicate_score, y_duplicate)
 
         self.log("val_duplicate_loss", duplicate_loss, on_step=True,
                  on_epoch=True, prog_bar=True, logger=True)
@@ -148,7 +240,6 @@ class DuplicateSiameseBert(pl.LightningModule):
         with autocast():
             duplicate_score = self.forward(
                 post1_x=post1_x, post2_x=post2_x)
-
 
         return duplicate_score
 
