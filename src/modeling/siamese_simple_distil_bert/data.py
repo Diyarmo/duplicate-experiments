@@ -1,4 +1,3 @@
-from modeling.siamese_bilstm.data_utils import digit_words, digits
 from data.text_normalizer import normalize_text
 import pandas as pd
 import numpy as np

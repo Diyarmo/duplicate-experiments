@@ -26,14 +26,13 @@ class DuplicateDataset(Dataset):
     def resample_by_label(self):
         min_sample_count = self.original_data['is_duplicate'].sum()
 
-        sampled_inddices = self.original_data.apply(
-            lambda x: np.random.choice(x.index, 3 * min_sample_count)
+        sampled_indices = self.original_data.groupby(["is_duplicate"]).apply(
+            lambda x: np.random.choice(x.index, 3 * min_sample_count, replace=False)
             if len(x) > min_sample_count
-            else x.index)
-
-        sampled_inddices = np.concatenate(sampled_inddices)
-        self.data = self.original_data.loc[sampled_inddices].sample(
-            len(sampled_inddices)).reset_index(drop=True)
+            else np.random.choice(x.index, min_sample_count, replace=False))
+        sampled_indices = np.concatenate(sampled_indices)
+        self.data = self.original_data.loc[sampled_indices].sample(
+            len(sampled_indices)).reset_index(drop=True)
 
     def __len__(self):
         return len(self.data)
@@ -169,7 +168,7 @@ class DuplicateDataLoader(pl.LightningDataModule):
         return DataLoader(self.train, batch_size=self.batch_size,
                           collate_fn=self.collate_batch,
                           shuffle=True,
-                          num_workers=8)
+                          num_workers=12)
 
     def val_dataloader(self):
         if self.resample_by_label:
@@ -177,4 +176,4 @@ class DuplicateDataLoader(pl.LightningDataModule):
         if self.test_sample_size:
             self.val.set_sample_data(self.test_sample_size)
         
-        return DataLoader(self.val, batch_size=self.batch_size, collate_fn=self.collate_batch, num_workers=8)
+        return DataLoader(self.val, batch_size=self.batch_size, collate_fn=self.collate_batch, num_workers=12)
