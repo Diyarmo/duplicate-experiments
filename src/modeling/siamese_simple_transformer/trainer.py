@@ -76,7 +76,7 @@ def train_model(
     trainer = pl.Trainer(
         max_epochs=max_epochs,
                          accelerator='gpu', 
-                         devices=[0],
+                         devices=[1],
                          callbacks=[
                              EarlyStopping(
                                  monitor="val_duplicate_loss", patience=4),

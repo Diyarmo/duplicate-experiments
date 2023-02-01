@@ -2,7 +2,7 @@ siamese_simple_transformer:
     text_max_length: 512
     text_emb_dim: 128
     text_hidden_dim: 256
-    text_num_layers: 2
+    text_num_layers: 3
     num_heads: 4
     output_feature_dim: 296
     features_emb_dim: 20
