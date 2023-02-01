@@ -7,14 +7,14 @@ stages:
       \ ../../storage/models/categorical_encodings/general_cities_encoding.npy\n"
     deps:
     - path: ../../src/modeling/siamese_simple_bilstm/data.py
-      md5: 4a273627db86b97454004ffb1eb445d2
-      size: 6549
+      md5: 98f46c5f712138a5c24dee77520db90c
+      size: 6416
     - path: ../../src/modeling/siamese_simple_bilstm/model.py
-      md5: 35ba2b05ea1e132e196b1ee14a887f0a
-      size: 8134
+      md5: 6d6d9ea0510d6f78f1571541474c4aad
+      size: 8600
     - path: ../../src/train.py
-      md5: 16c0d87b46b1c614c4c3b0a9e42d2e1f
-      size: 2622
+      md5: 21c4799e62f34c77c79629187f945a52
+      size: 2441
     - path: ../../storage/data/prepared/general_train.parquet
       md5: f7298805fe8fe3c80b7e2fc9fbe8f12f
       size: 1434369755
@@ -40,8 +40,8 @@ stages:
         siamese_simple_bilstm.text_num_layers: 2
     outs:
     - path: ../../storage/models/siamese_simple_bilstm_general_model.ckpt
-      md5: 51969222b329e6e7cc629e3ede73d659
-      size: 84645820
+      md5: d921136ab4d62dccea851394b5c1d33c
+      size: 81128508
   evaluate_simple_bilstm_general_queue:
     cmd: "python ../../src/evaluate.py siamese_simple_bilstm ../../storage/data/prepared/general_val.parquet\
       \ ../../storage/models/tokenizers/tokenizer_general.json ../../storage/models/categorical_encodings/general_categories_encoding.npy\
