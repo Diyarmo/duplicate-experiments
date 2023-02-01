@@ -7,7 +7,7 @@ from torch.cuda.amp import autocast
 from torchmetrics import Accuracy, MetricCollection, AUROC
 from transformers import AutoModel
 
-TEXT_AGGREGATION = "attention"  # "attention", "mean"
+TEXT_AGGREGATION = "CLS"  # CLS, "attention", "mean"
 FIELDS_ENCODING = "embedding"  # "embedding", "none"
 COMPARISON = "subtract"  # "subtract", "none"
 
@@ -96,7 +96,12 @@ class EncoderBlock(pl.LightningModule):
         x = x * math.sqrt(self.text_emb_dim)
         x = self.pos_encoder(x)
         x = self.transformer_encoder(x, src_key_padding_mask=torch.transpose(mask, 0, 1).type(torch.float))
-        x, _ = self.attention(x, mask)
+        if TEXT_AGGREGATION == "CLS":
+            x = x[:,0]
+        elif TEXT_AGGREGATION == "attention":
+            x, _ = self.attention(x, mask)
+        else:
+            x = x.mean(dim=1)
 
         return x
 
