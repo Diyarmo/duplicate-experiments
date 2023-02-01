@@ -40,7 +40,7 @@ def train_model(
         text_max_length=text_max_length,
         train_file=train_file,
         test_file=test_file,
-        test_sample_size=200000
+        resample_by_label=True
     )
 
     # Load Model
