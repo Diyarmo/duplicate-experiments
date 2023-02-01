@@ -54,7 +54,8 @@ def train_model(
     if checkpoint_path:
         print("Loading from checkpoint:", checkpoint_path)
         model = DuplicateSiameseTransformer.load_from_checkpoint(
-            checkpoint_path=checkpoint_path
+            checkpoint_path=checkpoint_path,
+            initial_lr=initial_lr
         )
     else:
         print("Creating New Model.")
@@ -83,6 +84,13 @@ def train_model(
 
                              ModelCheckpoint(
                                  monitor="val_duplicate_loss",
+                                 dirpath="../../storage/models/",
+                                 filename=f"siamese_simple_transformer_{queue_name}_model_best_loss",
+                                 save_top_k=1,
+                                 mode="min"),
+
+                            ModelCheckpoint(
+                                 monitor="epoch",
                                  dirpath="../../storage/models/",
                                  filename=f"siamese_simple_transformer_{queue_name}_model",
                                  save_top_k=1,

@@ -10,8 +10,8 @@ stages:
       md5: b82b6155288260301145ea50e8b6cc3c
       size: 6613
     - path: ../../src/modeling/siamese_simple_transformer/model.py
-      md5: e27c3f64437a43d0586fb971b1f76c04
-      size: 9902
+      md5: fc2bcbce5eaef1f86c8514021b0cdba3
+      size: 9903
     - path: ../../src/train.py
       md5: 21c4799e62f34c77c79629187f945a52
       size: 2441
@@ -32,7 +32,7 @@ stages:
       size: 1342740
     params:
       params.yaml:
-        siamese_simple_transformer.initial_lr: 0.001
+        siamese_simple_transformer.initial_lr: 0.0007
         siamese_simple_transformer.max_epochs: 10
         siamese_simple_transformer.num_heads: 4
         siamese_simple_transformer.output_feature_dim: 168
@@ -42,8 +42,8 @@ stages:
         siamese_simple_transformer.text_num_layers: 2
     outs:
     - path: ../../storage/models/siamese_simple_transformer_general_model.ckpt
-      md5: 9f24164fe51368b46bb7b46dfc1108fc
-      size: 89035675
+      md5: 1ab8390eb0ac8e3706670860d6c3ed7d
+      size: 89036505
   evaluate_siamese_simple_transformer_general_queue:
     cmd: "python ../../src/evaluate.py siamese_simple_transformer ../../storage/data/prepared/general_val.parquet\
       \ ../../storage/models/tokenizers/tokenizer_general.json ../../storage/models/categorical_encodings/general_categories_encoding.npy\
@@ -65,28 +65,28 @@ stages:
       md5: 73df39d8131fcef1cb2b8c1fcafd78c2
       size: 4537
     - path: ../../storage/models/siamese_simple_transformer_general_model.ckpt
-      md5: 9f24164fe51368b46bb7b46dfc1108fc
+      md5: 9d415173f891083fe03dfb690e521fdf
       size: 89035675
     - path: ../../storage/models/tokenizers/tokenizer_general.json
       md5: 69a183a40824b3d2d38f6cfc3559ca4e
       size: 1342740
     outs:
     - path: ../../logs/siamese_simple_transformer_general_scores_file.json
-      md5: 55ccf4c6489645e7062a09238669930f
-      size: 25
+      md5: 3b1beb3c9d4b66d189269695028fdc63
+      size: 27
     - path: ../../storage/data/prepared/siamese_simple_transformer_general_val_with_preds.parquet
-      md5: 237e893f617b627da4d6304608b3a598
-      size: 229478657
+      md5: 3c21ddb10b3b77c6ec55131e43580d19
+      size: 228614525
   update_readme:
     cmd: "python ../../src/update_readme.py params.yaml ../basic/params.yaml siamese_simple_transformer\
       \ ../../logs/siamese_simple_transformer_general_scores_file.json\n"
     deps:
     - path: ../../logs/siamese_simple_transformer_general_scores_file.json
-      md5: 55ccf4c6489645e7062a09238669930f
-      size: 25
+      md5: 3b1beb3c9d4b66d189269695028fdc63
+      size: 27
     - path: ../../src/update_readme.py
       md5: 9931629472c9978ed5116d481997e900
       size: 1381
     - path: ../../storage/data/prepared/siamese_simple_transformer_general_val_with_preds.parquet
-      md5: 237e893f617b627da4d6304608b3a598
-      size: 229478657
+      md5: 3c21ddb10b3b77c6ec55131e43580d19
+      size: 228614525

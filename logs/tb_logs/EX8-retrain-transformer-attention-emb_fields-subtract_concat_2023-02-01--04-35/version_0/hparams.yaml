@@ -1,0 +1,11 @@
+text_vocab_size: 40000
+text_emb_dim: 128
+text_hidden_dim: 256
+text_num_layers: 2
+num_heads: 4
+output_feature_dim: 168
+features_emb_dim: 20
+city_vocab_size: 372
+slug_vocab_size: 226
+dropout_rate: 0.2
+initial_lr: 0.001

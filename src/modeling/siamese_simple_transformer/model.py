@@ -264,7 +264,7 @@ class DuplicateSiameseTransformer(pl.LightningModule):
             self.log_dict(output, on_step=True, on_epoch=True,
                           prog_bar=True, logger=True)
 
-        if (batch_idx != 0) and (batch_idx % 4000 == 0):
+        if (batch_idx != 0) and (batch_idx % 3000 == 0):
             self.lr_schedulers().step()
 
         return duplicate_loss
@@ -297,7 +297,7 @@ class DuplicateSiameseTransformer(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.initial_lr)
         scheduler = torch.optim.lr_scheduler.StepLR(
-            optimizer, 1, gamma=0.9, last_epoch=-1, verbose=True)
+            optimizer, 1, gamma=0.95, last_epoch=-1, verbose=True)
 
         return [optimizer], [scheduler]
 

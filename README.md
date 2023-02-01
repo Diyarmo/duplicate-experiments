@@ -12,6 +12,7 @@
 		Using {transformer} in encoder
 		Using {attention} to aggregate embs in encoder
 		Using {subtract, concat, fully-connected} for output
+		Retrain for 10 more epochs
 
  Model Params: `{
   "text_max_length": 512,
@@ -24,8 +25,9 @@
   "max_epochs": 10,
   "dropout_rate": 0.2,
   "batch_size": 128,
-  "initial_lr": 0.001,
-  "accumulate_grad_batches": 2
+  "initial_lr": 0.00012,
+  "accumulate_grad_batches": 2,
+  "checkpoint_path": "../../storage/models/siamese_simple_transformer_general_model-old.ckpt"
 }`
 
  Tokenizer Params: {'vocab_size': 40000}
