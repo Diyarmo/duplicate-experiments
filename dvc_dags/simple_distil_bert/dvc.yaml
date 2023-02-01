@@ -33,9 +33,9 @@ stages:
       python ../../src/evaluate.py
       siamese_simple_distil_bert
       ../../storage/data/prepared/general_val.parquet
-      ../../storage/models/siamese_simple_distil_bert_general_model.ckpt
       ../../storage/models/categorical_encodings/general_categories_encoding.npy
       ../../storage/models/categorical_encodings/general_cities_encoding.npy        
+      ../../storage/models/siamese_simple_distil_bert_general_model.ckpt
     deps:
     - ../../storage/models/siamese_simple_distil_bert_general_model.ckpt
     - ../../src/evaluate.py

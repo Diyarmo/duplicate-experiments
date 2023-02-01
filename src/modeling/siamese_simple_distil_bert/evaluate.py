@@ -15,13 +15,17 @@ def get_simple_distil_bert_model_predictions(model, data_loader):
 
 def get_simple_distil_bert_model_and_dataloader(
         model_file,
-        test_path) -> Tuple[DuplicateSiameseBert, DuplicateDataLoader]:
+        test_path,
+        city_tokenizer_file,
+        slug_tokenizer_file) -> Tuple[DuplicateSiameseBert, DuplicateDataLoader]:
 
     data_loader = DuplicateDataLoader(
         batch_size=128,
-        text_max_length=None,
+        text_max_length=512,
         train_file=None,
         test_file=test_path,
+        city_tokenizer_file=city_tokenizer_file,
+        slug_tokenizer_file=slug_tokenizer_file,
         resample_by_label=True).val_dataloader()
 
     model = DuplicateSiameseBert.load_from_checkpoint(

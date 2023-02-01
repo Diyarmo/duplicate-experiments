@@ -46,66 +46,83 @@ stages:
       size: 93821745
   train_siamese_simple_distil_bert_general_queue:
     cmd: "python ../../src/train.py params.yaml siamese_simple_distil_bert ../../storage/data/prepared/general_train.parquet\
-      \ ../../storage/data/prepared/general_val.parquet\n"
+      \ ../../storage/data/prepared/general_val.parquet ../../storage/models/categorical_encodings/general_categories_encoding.npy\
+      \ ../../storage/models/categorical_encodings/general_cities_encoding.npy   \
+      \   \n"
     deps:
     - path: ../../src/modeling/siamese_simple_distil_bert/data.py
-      md5: 64b0285de3ff64b9d7615d68142281ee
-      size: 4888
+      md5: 4e2e1f5c5880f0c3039a4536072bfe00
+      size: 6550
     - path: ../../src/modeling/siamese_simple_distil_bert/model.py
-      md5: 0cf0ab6d48daa254d7b2be1e8d6f8c58
-      size: 5562
+      md5: 2cfdf2782c8d0c21ca4e2c1c9fc190c8
+      size: 8257
     - path: ../../src/train.py
-      md5: 4ca7be533ffbc649b04e933de7d395fc
-      size: 3143
+      md5: 8c2c06d4bff0b5236f33c11283dd6913
+      size: 2343
     - path: ../../storage/data/prepared/general_train.parquet
       md5: f7298805fe8fe3c80b7e2fc9fbe8f12f
       size: 1434369755
     - path: ../../storage/data/prepared/general_val.parquet
       md5: 69f86c56689eaa9d5d83fe3c95470ec3
       size: 3194175235
+    - path: ../../storage/models/categorical_encodings/general_categories_encoding.npy
+      md5: 55be1adf9d6238d9fd20ee485201e6e4
+      size: 4882
+    - path: ../../storage/models/categorical_encodings/general_cities_encoding.npy
+      md5: 73df39d8131fcef1cb2b8c1fcafd78c2
+      size: 4537
     params:
       params.yaml:
+        siamese_simple_distil_bert.features_emb_dim: 20
         siamese_simple_distil_bert.initial_lr: 0.001
-        siamese_simple_distil_bert.max_epochs: 5
-        siamese_simple_distil_bert.output_feature_dim: 768
+        siamese_simple_distil_bert.max_epochs: 3
+        siamese_simple_distil_bert.output_feature_dim: 296
         siamese_simple_distil_bert.text_max_length: 512
     outs:
     - path: ../../storage/models/siamese_simple_distil_bert_general_model.ckpt
-      md5: 7663cfe5a82abe13a321a5e8594d1cb3
-      size: 322022605
+      md5: e35edd6eab1afbbb5f4ad3fe3d3042c2
+      size: 321126621
   evaluate_siamese_simple_distil_bert_general_queue:
     cmd: "python ../../src/evaluate.py siamese_simple_distil_bert ../../storage/data/prepared/general_val.parquet\
-      \ ../../storage/models/siamese_simple_distil_bert_general_model.ckpt\n"
+      \ ../../storage/models/categorical_encodings/general_categories_encoding.npy\
+      \ ../../storage/models/categorical_encodings/general_cities_encoding.npy   \
+      \      ../../storage/models/siamese_simple_distil_bert_general_model.ckpt\n"
     deps:
     - path: ../../src/evaluate.py
-      md5: cbad381252819122163fafcbb5f6769e
-      size: 4900
+      md5: 767e3c681711629de747e5dc4422f335
+      size: 4027
     - path: ../../src/modeling/siamese_simple_distil_bert/evaluate.py
-      md5: 64f55216d81bbb62739bd1cdf9bb3026
-      size: 1012
+      md5: fe1b9dd2ce5c1f9ad13d028793a75cd5
+      size: 1167
     - path: ../../storage/data/prepared/general_val.parquet
       md5: 69f86c56689eaa9d5d83fe3c95470ec3
       size: 3194175235
+    - path: ../../storage/models/categorical_encodings/general_categories_encoding.npy
+      md5: 55be1adf9d6238d9fd20ee485201e6e4
+      size: 4882
+    - path: ../../storage/models/categorical_encodings/general_cities_encoding.npy
+      md5: 73df39d8131fcef1cb2b8c1fcafd78c2
+      size: 4537
     - path: ../../storage/models/siamese_simple_distil_bert_general_model.ckpt
-      md5: 7663cfe5a82abe13a321a5e8594d1cb3
-      size: 322022605
+      md5: e35edd6eab1afbbb5f4ad3fe3d3042c2
+      size: 321126621
     outs:
     - path: ../../logs/siamese_simple_distil_bert_general_scores_file.json
-      md5: 0f8ad84fb5060b1c14d44af6d0aff950
-      size: 27
+      md5: fabe7228698393b77a75d10005ddd2e8
+      size: 26
     - path: ../../storage/data/prepared/siamese_simple_distil_bert_general_val_with_preds.parquet
-      md5: 6cde29225ac1fcb192477cfba36ee492
-      size: 111016952
+      md5: eafae6324610f3fce8da37ab35e692ee
+      size: 228668105
   update_readme:
     cmd: "python ../../src/update_readme.py params.yaml ../basic/params.yaml siamese_simple_distil_bert\
       \ ../../logs/siamese_simple_distil_bert_general_scores_file.json\n"
     deps:
     - path: ../../logs/siamese_simple_distil_bert_general_scores_file.json
-      md5: 0f8ad84fb5060b1c14d44af6d0aff950
-      size: 27
+      md5: fabe7228698393b77a75d10005ddd2e8
+      size: 26
     - path: ../../src/update_readme.py
       md5: 9931629472c9978ed5116d481997e900
       size: 1381
     - path: ../../storage/data/prepared/siamese_simple_distil_bert_general_val_with_preds.parquet
-      md5: 6cde29225ac1fcb192477cfba36ee492
-      size: 111016952
+      md5: eafae6324610f3fce8da37ab35e692ee
+      size: 228668105

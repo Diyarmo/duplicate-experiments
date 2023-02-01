@@ -1,7 +1,7 @@
 siamese_simple_distil_bert:
     text_max_length: 512
     output_feature_dim: 296
-    max_epochs: 5
+    max_epochs: 3
     dropout_rate: 0.2
     batch_size: 64
     initial_lr: 0.001

@@ -81,11 +81,15 @@ if model_name == "siamese_simple_bilstm":
     predictions = get_simple_bilstm_model_predictions(model, data_loader)
 
 elif model_name == "siamese_simple_distil_bert":
-    model_path = sys.argv[3]
+    slug_tokenizer_file = sys.argv[3]
+    city_tokenizer_file = sys.argv[4]
+    model_path = sys.argv[5]
 
     model, data_loader = get_simple_distil_bert_model_and_dataloader(
         model_file=model_path,
         test_path=test_path,
+        slug_tokenizer_file=slug_tokenizer_file,
+        city_tokenizer_file=city_tokenizer_file,
     )
     predictions = get_simple_distil_bert_model_predictions(model, data_loader)
 
