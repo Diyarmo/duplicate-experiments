@@ -129,9 +129,9 @@ class DuplicateDataLoader(pl.LightningDataModule):
             post1_slugs.append(post1_x[1])
             post1_cities.append(post1_x[2])
 
-            post2_texts.append(post1_x[0])
-            post2_slugs.append(post1_x[1])
-            post2_cities.append(post1_x[2])
+            post2_texts.append(post2_x[0])
+            post2_slugs.append(post2_x[1])
+            post2_cities.append(post2_x[2])
 
             labels.append(_y)
 
