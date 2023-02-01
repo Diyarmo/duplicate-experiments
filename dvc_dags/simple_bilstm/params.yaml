@@ -10,8 +10,8 @@ siamese_simple_bilstm:
     initial_lr: 0.001
     experiment_specs:
     - "Simple MulitLayer BiLSTM"
-    - "Using {title, desc} features in encoder"
+    - "Using {title, desc, city, slug} features in encoder"
     - "Using {bilstm} in encoder"
-    - "Using {mean} to aggregate embs in encoder"
-    - "Using {concat, fully-connected} for output"
+    - "Using {attention} to aggregate embs in encoder"
+    - "Using {subtract, concat, fully-connected} for output"
     
