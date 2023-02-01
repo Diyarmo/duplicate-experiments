@@ -12,6 +12,6 @@ siamese_simple_bilstm:
     - "Simple MulitLayer BiLSTM"
     - "Using {title, desc} features in encoder"
     - "Using {bilstm} in encoder"
-    - "Using {mean} to aggregate embs in encoder"
+    - "Using {attention} to aggregate embs in encoder"
     - "Using {concat, fully-connected} for output"
     

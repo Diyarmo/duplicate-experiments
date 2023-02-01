@@ -6,7 +6,7 @@ from torch import nn
 
 from torchmetrics import Accuracy, MetricCollection, AUROC
 
-TEXT_AGGREGATION = "mean" # "attention", "mean"
+TEXT_AGGREGATION = "attention" # "attention", "mean"
 FIELDS_ENCODING = "none" # "embedding", "none"
 COMPARISON = "none" # "subtract", "none"
 

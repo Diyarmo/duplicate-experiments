@@ -7,14 +7,14 @@ stages:
       \ ../../storage/models/categorical_encodings/general_cities_encoding.npy\n"
     deps:
     - path: ../../src/modeling/siamese_simple_bilstm/data.py
-      md5: 4a273627db86b97454004ffb1eb445d2
-      size: 6549
+      md5: 98f46c5f712138a5c24dee77520db90c
+      size: 6416
     - path: ../../src/modeling/siamese_simple_bilstm/model.py
-      md5: 35ba2b05ea1e132e196b1ee14a887f0a
-      size: 8134
+      md5: df4ed38ecb0b95c34f4a26a248c87bd5
+      size: 8605
     - path: ../../src/train.py
-      md5: 16c0d87b46b1c614c4c3b0a9e42d2e1f
-      size: 2622
+      md5: 66b4d85e0c1ad7d88f31dcbf1c83fe34
+      size: 2173
     - path: ../../storage/data/prepared/general_train.parquet
       md5: f7298805fe8fe3c80b7e2fc9fbe8f12f
       size: 1434369755
@@ -40,19 +40,19 @@ stages:
         siamese_simple_bilstm.text_num_layers: 2
     outs:
     - path: ../../storage/models/siamese_simple_bilstm_general_model.ckpt
-      md5: 51969222b329e6e7cc629e3ede73d659
-      size: 84645820
+      md5: 797831940ea1fa45c7ec67f4f8c483bd
+      size: 75311444
   evaluate_simple_bilstm_general_queue:
     cmd: "python ../../src/evaluate.py siamese_simple_bilstm ../../storage/data/prepared/general_val.parquet\
       \ ../../storage/models/tokenizers/tokenizer_general.json ../../storage/models/categorical_encodings/general_categories_encoding.npy\
       \ ../../storage/models/categorical_encodings/general_cities_encoding.npy ../../storage/models/siamese_simple_bilstm_general_model.ckpt\n"
     deps:
     - path: ../../src/evaluate.py
-      md5: 022474fc1e74e017d3d2cc470981ba3d
-      size: 4393
+      md5: c2583ac7ff24a05f0afdfed716771ea9
+      size: 3853
     - path: ../../src/modeling/siamese_simple_bilstm/evaluate.py
-      md5: d7db53dead25b9a3ed10f4ead9f2ac89
-      size: 1208
+      md5: 37c2d5ecd2568fd7b73ff6d08f325422
+      size: 1207
     - path: ../../storage/data/prepared/general_val.parquet
       md5: 69f86c56689eaa9d5d83fe3c95470ec3
       size: 3194175235
@@ -63,28 +63,28 @@ stages:
       md5: 73df39d8131fcef1cb2b8c1fcafd78c2
       size: 4537
     - path: ../../storage/models/siamese_simple_bilstm_general_model.ckpt
-      md5: 51969222b329e6e7cc629e3ede73d659
-      size: 84645820
+      md5: 797831940ea1fa45c7ec67f4f8c483bd
+      size: 75311444
     - path: ../../storage/models/tokenizers/tokenizer_general.json
       md5: 69a183a40824b3d2d38f6cfc3559ca4e
       size: 1342740
     outs:
     - path: ../../logs/siamese_simple_bilstm_general_scores_file.json
-      md5: 5ca3e6d60e9eee644e484b71e43104d0
+      md5: 6d62d4efe907490b4e3a59c494484e68
       size: 27
     - path: ../../storage/data/prepared/siamese_simple_bilstm_general_val_with_preds.parquet
-      md5: aacc98904341a11892e6078217db5023
-      size: 529420647
+      md5: 5f744daddc625c546c86d971b09b080a
+      size: 228992660
   update_readme:
     cmd: "python ../../src/update_readme.py params.yaml ../basic/params.yaml siamese_simple_bilstm\
       \ ../../logs/siamese_simple_bilstm_general_scores_file.json\n"
     deps:
     - path: ../../logs/siamese_simple_bilstm_general_scores_file.json
-      md5: 5ca3e6d60e9eee644e484b71e43104d0
+      md5: 6d62d4efe907490b4e3a59c494484e68
       size: 27
     - path: ../../src/update_readme.py
       md5: 9931629472c9978ed5116d481997e900
       size: 1381
     - path: ../../storage/data/prepared/siamese_simple_bilstm_general_val_with_preds.parquet
-      md5: aacc98904341a11892e6078217db5023
-      size: 529420647
+      md5: 5f744daddc625c546c86d971b09b080a
+      size: 228992660

@@ -30,7 +30,7 @@ def get_simple_bilstm_model_and_dataloader(
         text_max_length=None,
         train_file=None,
         test_file=test_path,
-        test_sample_size=200000).val_dataloader()
+        resample_by_label=True).val_dataloader()
 
     model = DuplicateSiameseBiLSTM.load_from_checkpoint(
         checkpoint_path=model_file)

@@ -65,7 +65,7 @@ def train_model(
 
     print("Model Parameters Count:", model.count_parameters())
     trainer = pl.Trainer(max_epochs=max_epochs,
-                         gpus=1,
+                         gpus=[1],
                          callbacks=[
                              EarlyStopping(
                                  monitor="val_duplicate_loss", patience=4),
